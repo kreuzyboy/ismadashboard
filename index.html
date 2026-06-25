@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISMA — Cheque Management Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --green:#003C14; --green-mid:#00591f; --green-light:#e5f0e8; --green-bright:#00913a;
+  --gold:#A08C14;  --gold-b:#d4ba1f;   --gold-light:#fdf6d0;
+  --white:#fff;    --bg:#f0f4f1;       --border:#dbe5dd;
+  --text:#10180f;  --muted:#6b7d6c;    --muted2:#8fa38f;
+  --blue:#1565c0;  --blue-l:#eaf2ff;
+  --teal:#00897b;  --teal-l:#e3f5f2;
+  --purple:#7b1fa2;--purple-l:#f5ecfb;
+  --red:#c0392b;   --red-l:#fdecea;
+  --amber:#e67e22; --amber-l:#fdf0e3;
+  --orange:#e65c00;--orange-l:#fff3e0;
+  --shadow:0 2px 12px rgba(0,60,20,0.08);
+  --shadow-md:0 6px 24px rgba(0,60,20,0.12);
+  --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px}
+
+/* ═══════════════════════════════════════════
+   CONFIG / LOGIN SCREEN
+═══════════════════════════════════════════ */
+#configScreen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--green) 0%,#00531c 60%,#002a0e 100%);
+  padding:20px;
+}
+.cfg-card{background:var(--white);border-radius:16px;padding:40px;max-width:580px;width:100%;box-shadow:0 24px 64px rgba(0,60,20,0.4)}
+.cfg-logo{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.cfg-org{font-size:17px;font-weight:800;color:var(--green);line-height:1.2}
+.cfg-tag{font-size:9px;color:var(--gold);letter-spacing:1.3px;text-transform:uppercase;font-weight:600;margin-top:3px}
+.cfg-card h2{font-size:20px;font-weight:800;color:var(--green);margin-bottom:6px}
+.cfg-card>p{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6}
+.steps{margin-bottom:28px;display:flex;flex-direction:column;gap:10px}
+.step{display:flex;gap:14px;padding:12px 14px;background:var(--bg);border-radius:8px;border-left:3px solid var(--gold-b)}
+.step-num{width:26px;height:26px;flex-shrink:0;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.step-body h4{font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px}
+.step-body p{font-size:11px;color:var(--muted);line-height:1.5}
+.step-body code{display:block;background:#1e2e1f;color:#7ec67e;padding:7px 10px;border-radius:5px;font-size:10.5px;margin-top:6px;font-family:'JetBrains Mono',monospace;word-break:break-all}
+.cfg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.cfg-field label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);display:block;margin-bottom:4px}
+.cfg-field input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;outline:none}
+.cfg-field input:focus{border-color:var(--green)}
+.cfg-field.full{grid-column:1/-1}
+.btn-connect{width:100%;padding:13px;background:linear-gradient(120deg,var(--green),var(--green-mid));color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;letter-spacing:0.3px}
+.btn-connect:hover{opacity:.9} .btn-connect:disabled{background:var(--muted);cursor:wait}
+#cfgMsg{font-size:12px;margin-top:10px;min-height:18px;font-weight:500}
+
+/* ═══════════════════════════════════════════
+   HEADER — sticky, gradient
+═══════════════════════════════════════════ */
+.header{
+  background:linear-gradient(120deg,var(--green) 0%,#00531c 55%,#004018 100%);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;height:68px;
+  border-bottom:3px solid var(--gold-b);
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 16px rgba(0,60,20,0.35);
+}
+.hdr-left{display:flex;align-items:center;gap:14px}
+.hdr-logo{width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid var(--gold-b);flex-shrink:0}
+.org-name{font-size:15px;font-weight:800;color:#fff;letter-spacing:0.3px;line-height:1.2}
+.org-tag{font-size:9px;color:var(--gold-b);letter-spacing:1.2px;text-transform:uppercase;font-weight:500;margin-top:2px}
+.hdr-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.hdr-date{font-size:12px;color:rgba(255,255,255,0.8);font-weight:600}
+.hdr-sync{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--gold-b);font-weight:600}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#4caf50;box-shadow:0 0 0 2px rgba(76,175,80,0.25)}
+.sync-dot.syncing{background:var(--gold-b);animation:blink .6s infinite}
+.sync-dot.error{background:var(--red)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.hdr-user{font-size:10px;color:rgba(255,255,255,0.5)}
+
+/* ═══════════════════════════════════════════
+   STATUS RIBBON — below header
+═══════════════════════════════════════════ */
+.ribbon{
+  background:var(--green-mid);padding:7px 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+  font-size:11.5px;color:rgba(255,255,255,0.85);
+}
+.ribbon strong{color:var(--gold-b)}
+.ribbon-right{display:flex;gap:10px;align-items:center}
+.btn-sm{padding:5px 13px;font-size:11px;font-weight:600;border-radius:6px;border:none;cursor:pointer;transition:all .15s}
+.btn-refresh{background:rgba(255,255,255,0.15);color:#fff} .btn-refresh:hover{background:rgba(255,255,255,0.28)}
+.btn-disconnect{background:transparent;color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.2)} .btn-disconnect:hover{color:#fff}
+
+/* ═══════════════════════════════════════════
+   MAIN LAYOUT — sidebar + content
+═══════════════════════════════════════════ */
+.dashboard-layout{display:flex;min-height:calc(100vh - 100px)}
+
+/* ── LEFT SIDEBAR ── */
+.sidebar{
+  width:240px;flex-shrink:0;
+  background:var(--white);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:sticky;top:68px;height:calc(100vh - 68px);
+  overflow-y:auto;
+}
+.sidebar-section{padding:16px;border-bottom:1px solid var(--border)}
+.sidebar-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted2);margin-bottom:8px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:8px;
+  cursor:pointer;transition:all .15s;
+  font-size:12.5px;font-weight:500;color:var(--muted);
+  margin-bottom:2px;
+}
+.nav-item:hover{background:var(--bg);color:var(--text)}
+.nav-item.active{background:var(--green-light);color:var(--green);font-weight:700}
+.nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:var(--green);color:#fff;font-family:'JetBrains Mono',monospace}
+.nav-badge.amber{background:var(--amber)}
+.nav-badge.blue{background:var(--blue)}
+
+.mini-kpi{padding:10px 12px;border-radius:8px;margin-bottom:6px}
+.mini-kpi.green{background:var(--green-light)}
+.mini-kpi.amber{background:var(--amber-l)}
+.mini-kpi.purple{background:var(--purple-l)}
+.mini-kpi-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px}
+.mini-kpi.green .mini-kpi-label{color:var(--green)}
+.mini-kpi.amber .mini-kpi-label{color:var(--amber)}
+.mini-kpi.purple .mini-kpi-label{color:var(--purple)}
+.mini-kpi-val{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:800;color:var(--text)}
+.mini-kpi-sub{font-size:10px;color:var(--muted);margin-top:1px}
+
+.sidebar-actions{padding:12px 16px;margin-top:auto;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.btn-sidebar{width:100%;padding:9px 14px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;transition:all .15s}
+.btn-sidebar.gold{background:var(--gold-b);color:#fff} .btn-sidebar.gold:hover{background:var(--gold)}
+.btn-sidebar.purple{background:var(--purple-l);color:var(--purple)} .btn-sidebar.purple:hover{background:#ead4f7}
+
+/* ── MAIN CONTENT AREA ── */
+.main-content{flex:1;min-width:0;padding:24px 28px;display:flex;flex-direction:column;gap:0}
+
+/* ═══════════════════════════════════════════
+   SECTION: KPI STRIP (top of content)
+═══════════════════════════════════════════ */
+.kpi-strip{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:14px;
+  margin-bottom:24px;
+}
+@media(max-width:1200px){.kpi-strip{grid-template-columns:repeat(3,1fr)}}
+
+.kpi-card{
+  background:var(--white);border-radius:var(--radius);
+  padding:16px 18px;border:1px solid var(--border);
+  box-shadow:var(--shadow);position:relative;overflow:hidden;
+}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-today::before{background:linear-gradient(90deg,var(--gold-b),#f0d878)}
+.kpi-tomorrow::before{background:linear-gradient(90deg,var(--blue),#6ba6f0)}
+.kpi-week::before{background:linear-gradient(90deg,var(--teal),#5fc4b6)}
+.kpi-next::before{background:linear-gradient(90deg,var(--purple),#b27ad1)}
+.kpi-planned::before{background:linear-gradient(90deg,var(--orange),#f9a825)}
+
+.kpi-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted2);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.kpi-value{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:800;line-height:1;margin-bottom:4px}
+.kpi-today .kpi-value{color:var(--gold)} .kpi-tomorrow .kpi-value{color:var(--blue)}
+.kpi-week .kpi-value{color:var(--teal)} .kpi-next .kpi-value{color:var(--purple)} .kpi-planned .kpi-value{color:var(--orange)}
+.kpi-sub{font-size:11px;color:var(--muted);margin-bottom:8px}
+.kpi-chips{display:flex;flex-direction:column;gap:4px}
+.kpi-chip{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;border-radius:6px;font-size:10.5px}
+.kpi-chip-main{background:#eaf2ff} .kpi-chip-qab{background:var(--gold-light)}
+.kpi-chip-lbl{font-weight:700;color:var(--muted)} .kpi-chip-main .kpi-chip-lbl{color:#1a4a99} .kpi-chip-qab .kpi-chip-lbl{color:#6b5c00}
+.kpi-chip-val{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;color:var(--text)}
+.kpi-empty{font-size:11px;color:var(--green-bright);font-weight:600;background:var(--green-light);padding:5px 8px;border-radius:6px;text-align:center}
+.kpi-items{display:flex;flex-direction:column;gap:3px;max-height:110px;overflow-y:auto}
+.kpi-item{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--bg);font-size:11px}
+.kpi-item:last-child{border-bottom:none}
+
+/* ═══════════════════════════════════════════
+   SECTION: SUMMARY ROW (MTD + Total to Date)
+═══════════════════════════════════════════ */
+.summary-row{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+  margin-bottom:24px;
+}
+@media(max-width:900px){.summary-row{grid-template-columns:1fr}}
+.sum-card{
+  background:var(--white);border-radius:var(--radius);padding:18px 20px;
+  border:1px solid var(--border);box-shadow:var(--shadow);
+  position:relative;overflow:hidden;
+}
+.sum-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.sum-mtd::before{background:linear-gradient(90deg,var(--purple),#b27ad1)}
+.sum-total::before{background:linear-gradient(90deg,var(--green),var(--green-bright))}
+.sum-title{font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px}
+.sum-period{font-size:11px;color:var(--muted);margin-bottom:12px}
+.sum-stats{display:flex;gap:20px;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.sum-val{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;line-height:1}
+.sum-lbl{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;font-weight:600}
+.sum-mtd .sum-val{color:var(--purple)} .sum-total .sum-val{color:var(--green)}
+.sum-chips{display:flex;gap:8px;margin-bottom:12px}
+.achip{flex:1;border-radius:8px;padding:7px 10px;display:flex;flex-direction:column;gap:1px}
+.achip-main{background:#eaf2ff;border:1px solid #c9deff} .achip-qab{background:var(--gold-light);border:1px solid #ecdf9e}
+.achip-lbl{font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase}
+.achip-main .achip-lbl{color:#1a4a99} .achip-qab .achip-lbl{color:#6b5c00}
+.achip-val{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--text)}
+.achip-cnt{font-size:9.5px;color:var(--muted)}
+.cat-table{width:100%;font-size:11.5px;border-collapse:collapse}
+.cat-table th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted2);padding:4px 4px 6px;font-weight:700;border-bottom:1px solid var(--border)}
+.cat-table th.r,.cat-table td.r{text-align:right}
+.cat-table td{padding:5px 4px;border-bottom:1px solid var(--bg)}
+.cat-table tr:last-child td{border-bottom:none}
+.cat-name{font-weight:500}
+.cat-amt{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px}
+.cat-bar{height:3px;border-radius:2px;background:var(--bg);margin-top:3px}
+.cat-bar-fill{height:100%;border-radius:2px;display:block}
+.sum-mtd .cat-bar-fill{background:linear-gradient(90deg,var(--purple),#b27ad1)}
+.sum-total .cat-bar-fill{background:linear-gradient(90deg,var(--green),var(--green-bright))}
+
+/* ═══════════════════════════════════════════
+   TOOLBAR
+═══════════════════════════════════════════ */
+.toolbar{
+  background:var(--white);border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  margin-bottom:16px;box-shadow:var(--shadow);
+}
+.tlbl{font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted2);font-weight:700}
+.tab-grp{display:flex}
+.tbn{padding:6px 14px;font-size:11.5px;font-weight:600;border:1.5px solid var(--border);background:var(--white);cursor:pointer;color:var(--muted);transition:all .15s;white-space:nowrap}
+.tbn:first-child{border-radius:7px 0 0 7px} .tbn:last-child{border-radius:0 7px 7px 0}
+.tbn+.tbn{border-left:none} .tbn.active{background:var(--green);color:#fff;border-color:var(--green)}
+.srch{padding:6px 12px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:'Inter',sans-serif;outline:none;width:200px}
+.srch:focus{border-color:var(--green)}
+.sp{flex:1}
+
+/* ═══════════════════════════════════════════
+   ADD PANELS
+═══════════════════════════════════════════ */
+.add-panel{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:18px 22px;margin-bottom:16px;display:none;box-shadow:var(--shadow)}
+.add-panel.open{display:block}
+.add-panel h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.add-panel.cheque-panel h3{color:var(--gold)} .add-panel.planned-panel h3{color:var(--orange)}
+.add-panel p{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:12px}
+.ag{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px}
+.fld label{font-size:9.5px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);display:block;margin-bottom:3px;font-weight:700}
+.fld input,.fld select{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:'Inter',sans-serif;outline:none}
+.fld input:focus,.fld select:focus{border-color:var(--green)}
+.fld.s2{grid-column:span 2}
+.add-acts{margin-top:12px;display:flex;gap:8px;align-items:center}
+.btn{padding:7px 16px;font-size:12px;font-weight:600;border:none;border-radius:7px;cursor:pointer;transition:all .15s}
+.btn-g{background:var(--green);color:#fff} .btn-g:hover{background:var(--green-mid)}
+.btn-gold{background:var(--gold-b);color:#fff} .btn-gold:hover{background:var(--gold)}
+.btn-orange{background:var(--orange);color:#fff} .btn-orange:hover{opacity:.9}
+
+/* ═══════════════════════════════════════════
+   TABLE
+═══════════════════════════════════════════ */
+.tw{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:8px;box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse}
+th{background:linear-gradient(120deg,var(--green),var(--green-mid));color:#fff;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;padding:10px 14px;text-align:left;white-space:nowrap}
+th.r{text-align:right}
+td{padding:9px 14px;font-size:12.5px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-of-type:not(.tr-tot) td{border-bottom:none}
+tr:hover:not(.tr-tot) td{background:var(--bg)}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11.5px}
+.r{text-align:right}
+.amt{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;text-align:right;color:var(--green)}
+.nar{font-size:11px;color:var(--muted);max-width:250px}
+.pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
+.p-main{background:#eaf2ff;color:#1a4a99} .p-qab{background:var(--gold-light);color:#6b5c00}
+.del-btn{background:none;border:none;cursor:pointer;font-size:13px;opacity:0.35;padding:3px 6px;border-radius:4px;transition:all .15s}
+.del-btn:hover{opacity:1;background:var(--red-l)}
+tr.r-today td{background:var(--gold-light)} tr.r-today:hover td{background:#f5ecbe}
+tr.r-past td{background:var(--bg)}
+.tr-tot td{background:var(--green-light);font-weight:700;border-top:2px solid var(--green)}
+.tr-tot .amt{font-size:14px}
+.empty{padding:24px;text-align:center;color:var(--muted);font-size:12px;font-style:italic}
+
+/* ═══════════════════════════════════════════
+   SECTION HEADERS
+═══════════════════════════════════════════ */
+.sec-hdr{display:flex;align-items:center;gap:8px;margin:20px 0 10px;padding-bottom:8px;border-bottom:2px solid var(--border)}
+.sec-hdr h2{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.sec-bdg{background:var(--green);color:#fff;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace}
+.sec-ln{flex:1}
+.sec-tot{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700}
+
+/* ═══════════════════════════════════════════
+   RECONCILIATION
+═══════════════════════════════════════════ */
+.recon-summary{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.recon-card{background:var(--white);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--border);position:relative;overflow:hidden}
+.recon-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.recon-out::before{background:linear-gradient(90deg,var(--amber),#f4b266)}
+.recon-clr::before{background:linear-gradient(90deg,var(--green),var(--green-bright))}
+.rc-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted2);margin-bottom:6px}
+.rc-val{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:800;line-height:1}
+.recon-out .rc-val{color:var(--amber)} .recon-clr .rc-val{color:var(--green-bright)}
+.rc-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.status-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
+.status-cleared{background:var(--green-light);color:var(--green-bright)}
+.status-outstanding{background:var(--amber-l);color:var(--amber)}
+.clear-btn{padding:4px 10px;font-size:10px;font-weight:600;border-radius:6px;border:1px solid;cursor:pointer;background:var(--white);transition:all .15s;white-space:nowrap}
+.clear-btn.to-clear{color:var(--green-bright);border-color:var(--green-bright)} .clear-btn.to-clear:hover{background:var(--green-light)}
+.clear-btn.to-outstanding{color:var(--amber);border-color:var(--amber)} .clear-btn.to-outstanding:hover{background:var(--amber-l)}
+
+/* ═══════════════════════════════════════════
+   PLANNED EXPENSES
+═══════════════════════════════════════════ */
+.planned-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;background:var(--orange-l);color:var(--orange)}
+
+@media(max-width:900px){
+  .dashboard-layout{flex-direction:column}
+  .sidebar{width:100%;height:auto;position:static}
+  .main-content{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     CONFIG SCREEN
+═══════════════════════════════════════════════════ -->
+<div id="configScreen">
+  <div class="cfg-card">
+    <div class="cfg-logo">
+      <img src="data:image/png;base64,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" alt="ISMA" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--gold-b)">
+      <div>
+        <div class="cfg-org">Islamia School &amp; Mosque Association</div>
+        <div class="cfg-tag">Live Cheque Management Dashboard</div>
+      </div>
+    </div>
+    <h2>Connect to Google Sheets</h2>
+    <p>Enter your details and paste the Google Apps Script Web App URL to connect this dashboard to the live cheque register. You only do this once per device.</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><h4>Create Google Sheet + paste Apps Script</h4><p>Go to your ISMA Cheque Register Google Sheet → Extensions → Apps Script → paste ISMA_AppScript.gs → Save</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><h4>Run setupSheets once</h4><p>Select <strong>setupSheets</strong> from dropdown → Run. Creates MAIN 102, QAB 107 and Planned Expenses tabs.</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><h4>Deploy as Web App</h4><p>Deploy → New Deployment → Web App → Execute as: <strong>Me</strong> → Who has access: <strong>Anyone</strong> → Deploy → copy URL below</p><code>https://script.google.com/macros/s/YOUR_ID/exec</code></div></div>
+    </div>
+    <div class="cfg-row">
+      <div class="cfg-field"><label>Your Name</label><input type="text" id="cfg_name" placeholder="e.g. Abdul Shakoor"></div>
+      <div class="cfg-field"><label>Location / Role</label><input type="text" id="cfg_role" placeholder="e.g. TREASURY"></div>
+    </div>
+    <div class="cfg-field full" style="margin-bottom:0">
+      <label>Google Apps Script Web App URL *</label>
+      <input type="text" id="cfg_url" placeholder="https://script.google.com/macros/s/…/exec">
+    </div>
+    <button class="btn-connect" id="btnConnect" onclick="connect()">Connect to Live Dashboard →</button>
+    <div id="cfgMsg"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     DASHBOARD
+═══════════════════════════════════════════════════ -->
+<div id="dashboard" style="display:none">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="hdr-left">
+      <img src="data:image/png;base64,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" alt="ISMA" class="hdr-logo">
+      <div>
+        <div class="org-name">Islamia School &amp; Mosque Association</div>
+        <div class="org-tag">Custodians of the Sunni Muslim Cemeteries — Kariokor &amp; New Lan'gata</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-date" id="hdrDate"></div>
+      <div class="hdr-sync"><span class="sync-dot" id="syncDot"></span><span id="syncTxt">Live · Google Sheets</span></div>
+      <div class="hdr-user" id="hdrUser"></div>
+    </div>
+  </div>
+
+  <!-- RIBBON -->
+  <div class="ribbon">
+    <span>📡 Connected to Google Sheets &nbsp;·&nbsp; <strong id="ribbonSheet">MAIN 102 + QAB 107</strong> &nbsp;·&nbsp; Last synced: <strong id="lastSync">—</strong></span>
+    <div class="ribbon-right">
+      <span id="ribbonCount" style="font-size:11px;color:rgba(255,255,255,0.6)"></span>
+      <button class="btn-sm btn-refresh" onclick="loadData()">↻ Refresh</button>
+      <button class="btn-sm btn-disconnect" onclick="disconnect()">Disconnect</button>
+    </div>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="dashboard-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Navigation</div>
+        <div class="nav-item active" id="nav-timeline" onclick="setView('timeline')">
+          <span class="nav-icon">📅</span> Timeline
+        </div>
+        <div class="nav-item" id="nav-all" onclick="setView('all')">
+          <span class="nav-icon">📋</span> All Entries
+        </div>
+        <div class="nav-item" id="nav-recon" onclick="setView('recon')">
+          <span class="nav-icon">✅</span> Reconciliation
+          <span class="nav-badge amber" id="nav-recon-badge">—</span>
+        </div>
+        <div class="nav-item" id="nav-planned" onclick="setView('planned')">
+          <span class="nav-icon">🔮</span> Planned Expenses
+          <span class="nav-badge" id="nav-planned-badge">—</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Account Filter</div>
+        <div class="nav-item active" id="acc-ALL" onclick="setAcc('ALL')">
+          <span class="nav-icon">🏦</span> All Accounts
+        </div>
+        <div class="nav-item" id="acc-MAIN" onclick="setAcc('MAIN 102')">
+          <span class="nav-icon">🔵</span> MAIN 102
+        </div>
+        <div class="nav-item" id="acc-QAB" onclick="setAcc('QAB 107')">
+          <span class="nav-icon">🟡</span> QAB 107
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Quick Totals</div>
+        <div class="mini-kpi green" id="sk-total"></div>
+        <div class="mini-kpi amber" id="sk-outstanding"></div>
+        <div class="mini-kpi purple" id="sk-mtd"></div>
+      </div>
+
+      <div class="sidebar-actions">
+        <button class="btn-sidebar gold" onclick="toggleAdd()">＋ Record Cheque</button>
+        <button class="btn-sidebar purple" onclick="togglePlanned()">＋ Planned Expense</button>
+      </div>
+    </div>
+
+    <!-- ── MAIN CONTENT ── -->
+    <div class="main-content">
+
+      <!-- ADD PANELS -->
+      <div class="add-panel cheque-panel" id="addPanel">
+        <h3>Record New Cheque Issued</h3>
+        <div class="ag">
+          <div class="fld"><label>Date (dd/mm/yyyy) *</label><input type="text" id="in_date" placeholder="16/06/2026" maxlength="10"></div>
+          <div class="fld"><label>Account *</label><select id="in_acc"><option value="MAIN 102">MAIN 102</option><option value="QAB 107">QAB 107</option></select></div>
+          <div class="fld"><label>Cheque No. *</label><input type="text" id="in_chq" placeholder="e.g. 620"></div>
+          <div class="fld"><label>Payee *</label><input type="text" id="in_payee" placeholder="Payee name"></div>
+          <div class="fld"><label>Amount (KES) *</label><input type="text" id="in_amt" placeholder="0.00"></div>
+          <div class="fld s2"><label>Narration / Purpose</label><input type="text" id="in_nar" placeholder="Brief description of payment"></div>
+        </div>
+        <div class="add-acts">
+          <button class="btn btn-g" onclick="saveEntry()">Save to Google Sheet</button>
+          <button class="btn" style="background:var(--bg);color:var(--muted);border:1.5px solid var(--border)" onclick="toggleAdd()">Cancel</button>
+          <span id="addMsg" style="font-size:12px;font-weight:500"></span>
+        </div>
+      </div>
+
+      <div class="add-panel planned-panel" id="plannedPanel">
+        <h3>Add Planned / Provisional Expense</h3>
+        <p>Budget for upcoming expenditure before the cheque is issued — e.g. next month's salaries. These appear in the forecast and are kept separate from issued cheques.</p>
+        <div class="ag">
+          <div class="fld"><label>Expected Date (dd/mm/yyyy) *</label><input type="text" id="pl_date" placeholder="22/06/2026" maxlength="10"></div>
+          <div class="fld"><label>Account *</label><select id="pl_acc"><option value="MAIN 102">MAIN 102</option><option value="QAB 107">QAB 107</option></select></div>
+          <div class="fld"><label>Estimated Amount (KES) *</label><input type="text" id="pl_amt" placeholder="0.00"></div>
+          <div class="fld"><label>Category</label><select id="pl_cat"><option>Salaries &amp; Statutory</option><option>Electricity</option><option>Water</option><option>Security Services</option><option>Medical Donations</option><option>Education Donations</option><option>Rent Donations</option><option>Construction &amp; Renovations</option><option>Facilitation &amp; Donations</option><option>Transport</option><option>Insurance</option><option>Other / Miscellaneous</option></select></div>
+          <div class="fld s2"><label>Description *</label><input type="text" id="pl_desc" placeholder="e.g. Staff salaries for June 2026"></div>
+        </div>
+        <div class="add-acts">
+          <button class="btn btn-orange" onclick="savePlanned()">Save Planned Expense</button>
+          <button class="btn" style="background:var(--bg);color:var(--muted);border:1.5px solid var(--border)" onclick="togglePlanned()">Cancel</button>
+          <span id="plMsg" style="font-size:12px;font-weight:500"></span>
+        </div>
+      </div>
+
+      <!-- KPI STRIP -->
+      <div class="kpi-strip" id="kpiStrip"></div>
+
+      <!-- SUMMARY ROW — MTD + Total to Date -->
+      <div class="summary-row" id="summaryArea"></div>
+
+      <!-- TOOLBAR -->
+      <div class="toolbar">
+        <span class="tlbl">View</span>
+        <div class="tab-grp">
+          <button class="tbn active" id="view-timeline" onclick="setView('timeline')">Timeline</button>
+          <button class="tbn" id="view-all" onclick="setView('all')">All Entries</button>
+          <button class="tbn" id="view-recon" onclick="setView('recon')">Reconciliation</button>
+          <button class="tbn" id="view-planned" onclick="setView('planned')">Planned</button>
+        </div>
+        <input class="srch" id="srch" type="text" placeholder="🔍  Search payee / cheque / narration…" oninput="render()">
+        <div class="sp"></div>
+        <input type="month" id="monthFilter" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:Inter,sans-serif;outline:none" onchange="render()">
+      </div>
+
+      <!-- MAIN OUTPUT -->
+      <div id="mainOut"></div>
+
+    </div><!-- end main-content -->
+  </div><!-- end layout -->
+</div><!-- end dashboard -->
+
+<script>
+
+// ─── CONFIG PERSISTENCE ───────────────────────────────────────────────────
+let CFG = JSON.parse(localStorage.getItem('isma_cfg') || 'null');
+let ROWS = [];
+let PLANNED = [];
+let acc = 'ALL', view = 'timeline';
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+
+function saveConfig(url, name, role) {
+  CFG = { url, name, role };
+  localStorage.setItem('isma_cfg', JSON.stringify(CFG));
+}
+function disconnect() {
+  if (!confirm('Disconnect from Google Sheet? You can reconnect anytime.')) return;
+  localStorage.removeItem('isma_cfg');
+  location.reload();
+}
+
+// ─── INIT: skip config screen if already set ─────────────────────────────
+if (CFG && CFG.url) {
+  document.getElementById('configScreen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  initDashboard();
+}
+
+// ─── CONNECT ─────────────────────────────────────────────────────────────
+async function connect() {
+  const url  = document.getElementById('cfg_url').value.trim();
+  const name = document.getElementById('cfg_name').value.trim() || 'User';
+  const role = document.getElementById('cfg_role').value.trim() || 'Nairobi';
+  const msg  = document.getElementById('cfgMsg');
+  const btn  = document.getElementById('btnConnect');
+  if (!url || !url.includes('script.google.com')) {
+    msg.style.color = 'var(--red)'; msg.textContent = '⚠ Please enter a valid Google Apps Script Web App URL.'; return;
+  }
+  btn.disabled = true; btn.textContent = 'Connecting…';
+  msg.style.color = 'var(--muted)'; msg.textContent = 'Testing connection…';
+  try {
+    const res = await fetch(url + '?action=read');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Unexpected response');
+    saveConfig(url, name, role);
+    msg.style.color = 'var(--green-bright)';
+    msg.textContent = `✓ Connected! Found ${data.rows.length} entries. Loading dashboard…`;
+    setTimeout(() => {
+      document.getElementById('configScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      initDashboard();
+    }, 900);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Connect to Google Sheets →';
+    msg.style.color = 'var(--red)';
+    msg.textContent = '✗ Connection failed: ' + e.message + '. Check your URL and that the Web App is deployed as "Anyone" can access.';
+  }
+}
+
+// ─── DASHBOARD INIT ───────────────────────────────────────────────────────
+function initDashboard() {
+  document.getElementById('hdrDate').textContent =
+    TODAY.toLocaleDateString('en-GB', {weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  document.getElementById('hdrUser').textContent = (CFG.name || '') + (CFG.role ? ' · ' + CFG.role : '');
+  document.getElementById('ribbonSheet').textContent = 'MAIN 102 + QAB 107';
+  loadData();
+  // Auto-refresh every 2 minutes
+  setInterval(loadData, 120000);
+}
+
+// ─── LOAD DATA FROM GOOGLE SHEET ─────────────────────────────────────────
+async function loadData() {
+  setSyncState('syncing', 'Syncing…');
+  try {
+    const res  = await fetch(CFG.url + '?action=read&_=' + Date.now());
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    // Accept ALL rows — no date cutoff filter
+    ROWS = data.rows.filter(r => r.cheque || r.amount);
+    PLANNED = (data.planned || []).filter(r => r.description || r.amount);
+    document.getElementById('lastSync').textContent =
+      new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('ribbonCount').textContent =
+      ROWS.length + ' entries · KES ' + Math.round(ROWS.reduce((s,r)=>s+r.amount,0)).toLocaleString('en-KE');
+    setSyncState('ok', 'Live · Google Sheets');
+    render();
+  } catch(e) {
+    setSyncState('error', 'Sync failed');
+    document.getElementById('mainOut').innerHTML =
+      `<div class="empty">⚠ Could not load data: ${e.message}.<br>Check your internet connection or click Refresh.</div>`;
+  }
+}
+
+function setSyncState(state, txt) {
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncTxt');
+  dot.className = 'sync-dot' + (state === 'syncing' ? ' syncing' : state === 'error' ? ' error' : '');
+  lbl.textContent = txt;
+}
+
+// ─── SAVE ENTRY ───────────────────────────────────────────────────────────
+async function saveEntry() {
+  const dateRaw = document.getElementById('in_date').value.trim();
+  const account = document.getElementById('in_acc').value;
+  const cheque  = document.getElementById('in_chq').value.trim();
+  const payee   = document.getElementById('in_payee').value.trim();
+  const amtStr  = document.getElementById('in_amt').value.replace(/,/g,'').trim();
+  const nar     = document.getElementById('in_nar').value.trim();
+  const msg     = document.getElementById('addMsg');
+
+  const isoDate = parseDMY(dateRaw);
+  if (!isoDate || !cheque || !payee || !amtStr) {
+    msg.style.color='var(--red)'; msg.textContent='⚠ Fill required fields. Date: dd/mm/yyyy'; return;
+  }
+  const amount = parseFloat(amtStr);
+  if (isNaN(amount) || amount <= 0) { msg.style.color='var(--red)'; msg.textContent='⚠ Invalid amount'; return; }
+
+  msg.style.color='var(--muted)'; msg.textContent='Saving to Google Sheet…';
+
+  try {
+    const body = { action:'write', date:isoDate, cheque, payee, amount, narration:nar, account, addedBy: CFG.name + (CFG.role?' · '+CFG.role:'') };
+    const res = await fetch(CFG.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || data.message);
+    msg.style.color = 'var(--green-bright)';
+    msg.textContent = `✓ ${data.message}`;
+    ['in_chq','in_payee','in_amt','in_nar'].forEach(id => document.getElementById(id).value = '');
+    setTimeout(() => { msg.textContent=''; loadData(); }, 1500);
+  } catch(e) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = '✗ Save failed: ' + e.message;
+  }
+}
+
+// ─── DELETE ENTRY ─────────────────────────────────────────────────────────
+async function deleteEntry(cheque, account) {
+  if (!confirm(`Delete cheque ${cheque} from ${account}?\nThis cannot be undone.`)) return;
+  try {
+    const res = await fetch(CFG.url, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'delete', cheque, account})
+    });
+    const data = await res.json();
+    if (data.ok) { loadData(); }
+    else alert('Delete failed: ' + data.message);
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+// ─── RECONCILIATION: toggle Cleared / Outstanding ────────────────────────
+async function toggleCleared(cheque, account, makeCleared){
+  try {
+    const body = { action:'setCleared', cheque, account, cleared: makeCleared };
+    if (makeCleared) {
+      const now = new Date();
+      body.clearedDate = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+    }
+    const res = await fetch(CFG.url, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.ok) { loadData(); }
+    else alert('Update failed: ' + data.message);
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+// ─── PLANNED EXPENSES: save ───────────────────────────────────────────────
+async function savePlanned(){
+  const dateRaw = document.getElementById('pl_date').value.trim();
+  const account = document.getElementById('pl_acc').value;
+  const amtStr  = document.getElementById('pl_amt').value.replace(/,/g,'').trim();
+  const cat     = document.getElementById('pl_cat').value;
+  const desc    = document.getElementById('pl_desc').value.trim();
+  const msg     = document.getElementById('plMsg');
+
+  const isoDate = parseDMY(dateRaw);
+  if (!isoDate || !desc || !amtStr) {
+    msg.style.color='var(--red)'; msg.textContent='⚠ Fill required fields. Date: dd/mm/yyyy'; return;
+  }
+  const amount = parseFloat(amtStr);
+  if (isNaN(amount) || amount <= 0) { msg.style.color='var(--red)'; msg.textContent='⚠ Invalid amount'; return; }
+
+  msg.style.color='var(--muted)'; msg.textContent='Saving…';
+
+  try {
+    const body = { action:'writePlanned', date:isoDate, description:desc, amount, account, category:cat, addedBy: CFG.name + (CFG.role?' · '+CFG.role:'') };
+    const res = await fetch(CFG.url, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || data.message);
+    msg.style.color = 'var(--green-bright)';
+    msg.textContent = `✓ ${data.message}`;
+    ['pl_amt','pl_desc'].forEach(id => document.getElementById(id).value = '');
+    setTimeout(() => { msg.textContent=''; loadData(); }, 1500);
+  } catch(e) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = '✗ Save failed: ' + e.message;
+  }
+}
+
+async function deletePlannedEntry(row){
+  if (!confirm('Delete this planned expense?')) return;
+  try {
+    const res = await fetch(CFG.url, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'deletePlanned', row})
+    });
+    const data = await res.json();
+    if (data.ok) { loadData(); }
+    else alert('Delete failed: ' + data.message);
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────
+function parseISO(s){if(!s)return null;var p=s.split("-");if(p.length===3){var d=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));return isNaN(d)?null:d;}var d2=new Date(s);d2.setHours(0,0,0,0);return isNaN(d2)?null:d2;}
+function diffDays(d){return Math.round((d-TODAY)/86400000)}
+function fmtDMY(iso){if(!iso)return'—';const[y,m,d]=iso.split('-');return`${d}/${m}/${y}`}
+function parseDMY(s){
+  const p=s.trim().split(/[\/\-\.]/);
+  if(p.length!==3)return null;
+  let d=p[0],m=p[1],y=p[2];
+  if(y.length!==4)return null;
+  const dt=new Date(`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`);
+  return isNaN(dt)?null:dt.toISOString().slice(0,10);
+}
+function fmt(n){return'KES '+Math.round(n).toLocaleString('en-KE')}
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):s}
+function getWeekEnd(){
+  const d=new Date(TODAY),day=d.getDay(),toEnd=day===0?0:7-day;
+  d.setDate(d.getDate()+toEnd);return d;
+}
+function getNextWeekRange(){
+  const we=getWeekEnd();
+  const start=new Date(we); start.setDate(start.getDate()+1);
+  const end=new Date(start); end.setDate(end.getDate()+6);
+  return {start,end};
+}
+function filtered(){
+  let out=ROWS.filter(r=>acc==='ALL'||r.account===acc);
+  const q=document.getElementById('srch').value.toLowerCase();
+  if(q)out=out.filter(r=>(r.payee||'').toLowerCase().includes(q)||(r.cheque||'').toLowerCase().includes(q)||(r.narration||'').toLowerCase().includes(q));
+  return out.sort((a,b)=>{
+    const da=parseISO(a.date),db=parseISO(b.date);
+    if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return da-db;
+  });
+}
+
+// ─── ALERTS ───────────────────────────────────────────────────────────────
+function buildAlerts(){
+  const all=filtered();
+  const we=getWeekEnd();
+  const nw=getNextWeekRange();
+  const tdy=all.filter(r=>{const d=parseISO(r.date);return d&&diffDays(d)===0});
+  const tom=all.filter(r=>{const d=parseISO(r.date);return d&&diffDays(d)===1});
+  const wk =all.filter(r=>{const d=parseISO(r.date);if(!d)return false;const df=diffDays(d);return df>=2&&d<=we});
+  const nxt=all.filter(r=>{const d=parseISO(r.date);if(!d)return false;return d>=nw.start&&d<=nw.end});
+  const nxtPlanned=PLANNED.filter(r=>{
+    if(acc!=='ALL'&&r.account!==acc)return false;
+    const d=parseISO(r.date);if(!d)return false;return d>=nw.start&&d<=nw.end;
+  });
+
+  function rows(arr, cls, max=6){
+    if(!arr.length)return`<div class="a-empty">✓ No cheques scheduled</div>`;
+    let h=arr.slice(0,max).map(r=>`<div class="ar">
+      <span class="ar-pill ${r.account==='MAIN 102'?'p-main':'p-qab'}">${r.account==='MAIN 102'?'MAIN':'QAB'}</span>
+      <span class="ar-chq">Chq ${r.cheque}</span>
+      <span class="ar-payee">${cap(r.payee)}</span>
+      <span class="ar-amt">${fmt(r.amount)}</span>
+    </div>`).join('');
+    if(arr.length>max)h+=`<div class="a-more">+${arr.length-max} more — see Timeline below</div>`;
+    return h;
+  }
+
+  function plannedRows(arr,max=6){
+    if(!arr.length)return'';
+    let h=arr.slice(0,max).map(r=>`<div class="forecast-row">
+      <span class="planned-pill">📋 ${r.category||'Planned'}</span>
+      <span class="ar-payee">${r.description}</span>
+      <span class="ar-amt">${fmt(r.amount)}</span>
+    </div>`).join('');
+    if(arr.length>max)h+=`<div class="a-more">+${arr.length-max} more planned items</div>`;
+    return h;
+  }
+
+  function acctChips(arr){
+    return ['MAIN 102','QAB 107'].map(a=>{
+      const s=arr.filter(r=>r.account===a);
+      if(!s.length)return'';
+      return`<div class="achip ${a==='MAIN 102'?'achip-main':'achip-qab'}">
+        <span class="achip-lbl">${a}</span>
+        <span class="achip-val">${fmt(s.reduce((t,r)=>t+r.amount,0))}</span>
+        <span class="achip-cnt">${s.length} chq${s.length>1?'s':''}</span>
+      </div>`;
+    }).join('');
+  }
+
+  const weStr=we.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+  const nwStr=`${nw.start.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})} – ${nw.end.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})}`;
+  document.getElementById('alertsArea').innerHTML=`
+    <div class="alert-card a-today">
+      <div class="alert-icon">⚡</div>
+      <div class="alert-body">
+        <div class="alert-title">Cheques Due Today</div>
+        <div class="alert-sub">${TODAY.toLocaleDateString('en-GB',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</div>
+        <div class="alert-stats">
+          <div><div class="astat-val">${tdy.length}</div><div class="astat-lbl">Cheques</div></div>
+          <div><div class="astat-val">${fmt(tdy.reduce((s,r)=>s+r.amount,0))}</div><div class="astat-lbl">Total Value</div></div>
+        </div>
+        <div class="achips">${acctChips(tdy)}</div>
+        <div class="ar-list">${rows(tdy,'a-today')}</div>
+      </div>
+    </div>
+    <div class="alert-card a-tom">
+      <div class="alert-icon">📅</div>
+      <div class="alert-body">
+        <div class="alert-title">Due Tomorrow</div>
+        <div class="alert-sub">${new Date(TODAY.getTime()+86400000).toLocaleDateString('en-GB',{weekday:'long',day:'2-digit',month:'long'})}</div>
+        <div class="alert-stats">
+          <div><div class="astat-val">${tom.length}</div><div class="astat-lbl">Cheques</div></div>
+          <div><div class="astat-val">${fmt(tom.reduce((s,r)=>s+r.amount,0))}</div><div class="astat-lbl">Total Value</div></div>
+        </div>
+        <div class="achips">${acctChips(tom)}</div>
+        <div class="ar-list">${rows(tom,'a-tom')}</div>
+      </div>
+    </div>
+    <div class="alert-card a-week">
+      <div class="alert-icon">📆</div>
+      <div class="alert-body">
+        <div class="alert-title">Rest of This Week</div>
+        <div class="alert-sub">to ${weStr}</div>
+        <div class="alert-stats">
+          <div><div class="astat-val">${wk.length}</div><div class="astat-lbl">Cheques</div></div>
+          <div><div class="astat-val">${fmt(wk.reduce((s,r)=>s+r.amount,0))}</div><div class="astat-lbl">Total Value</div></div>
+        </div>
+        <div class="achips">${acctChips(wk)}</div>
+        <div class="ar-list">${rows(wk,'a-week',10)}</div>
+      </div>
+    </div>
+    <div class="alert-card a-next">
+      <div class="alert-icon">🔭</div>
+      <div class="alert-body">
+        <div class="alert-title">Expected Next Week</div>
+        <div class="alert-sub">${nwStr}${nxtPlanned.length?` · incl. ${nxtPlanned.length} planned item${nxtPlanned.length>1?'s':''}`:''}</div>
+        <div class="alert-stats">
+          <div><div class="astat-val">${nxt.length}</div><div class="astat-lbl">Cheques</div></div>
+          <div><div class="astat-val">${fmt(nxt.reduce((s,r)=>s+r.amount,0))}</div><div class="astat-lbl">Issued Value</div></div>
+          ${nxtPlanned.length?`<div><div class="astat-val" style="color:var(--purple)">${fmt(nxtPlanned.reduce((s,r)=>s+r.amount,0))}</div><div class="astat-lbl">+ Planned</div></div>`:''}
+        </div>
+        <div class="achips">${acctChips(nxt)}</div>
+        <div class="ar-list">${rows(nxt,'a-next',6)}${plannedRows(nxtPlanned,4)}</div>
+      </div>
+    </div>
+    <div class="alert-card a-planned">
+      <div class="alert-icon">📋</div>
+      <div class="alert-body">
+        <div class="alert-title">Planned Provisions</div>
+        <div class="alert-sub">All upcoming budgeted expenses</div>
+        <div class="alert-stats">
+          <div><div class="astat-val">${PLANNED.filter(r=>acc==='ALL'||r.account===acc).length}</div><div class="astat-lbl">Items</div></div>
+          <div><div class="astat-val">${fmt(PLANNED.filter(r=>acc==='ALL'||r.account===acc).reduce((s,r)=>s+r.amount,0))}</div><div class="astat-lbl">Total Budgeted</div></div>
+        </div>
+        <div class="achips">${(()=>{
+          const pf=PLANNED.filter(r=>acc==='ALL'||r.account===acc);
+          return['MAIN 102','QAB 107'].map(a=>{
+            const s=pf.filter(r=>r.account===a);
+            return s.length?`<div class="achip ${a==='MAIN 102'?'achip-main':'achip-qab'}">
+              <span class="achip-lbl">${a}</span>
+              <span class="achip-val">${fmt(s.reduce((t,r)=>t+r.amount,0))}</span>
+              <span class="achip-cnt">${s.length} item${s.length>1?'s':''}</span>
+            </div>`:'';
+          }).join('');
+        })()}</div>
+        <div class="ar-list">${(()=>{
+          const pf=PLANNED.filter(r=>acc==='ALL'||r.account===acc);
+          if(!pf.length)return`<div class="a-empty">No planned expenses yet — click "+ Planned Expense" to add one</div>`;
+          return pf.slice(0,5).map(r=>`<div class="ar" style="background:rgba(230,200,255,0.25);border:1px dashed var(--purple)">
+            <span class="planned-pill">${r.category||'General'}</span>
+            <span class="ar-payee">${r.description}</span>
+            <span class="ar-amt" style="color:var(--purple)">${fmt(r.amount)}</span>
+          </div>`).join('') + (pf.length>5?`<div class="a-more">+${pf.length-5} more planned items</div>`:'');
+        })()}</div>
+      </div>
+    </div>`;
+}
+
+// ─── TABLE ────────────────────────────────────────────────────────────────
+function tbl(rows){
+  if(!rows.length)return`<div class="empty">No entries found.</div>`;
+  const tot=rows.reduce((s,r)=>s+r.amount,0);
+  return`<div class="tw"><table>
+    <thead><tr>
+      <th>Date</th><th>Cheque No.</th><th>Account</th><th>Payee</th>
+      <th class="r">Amount (KES)</th><th>Narration</th><th>Status</th><th class="del-col"></th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r=>{
+        const d=parseISO(r.date),df=d?diffDays(d):999;
+        const rc=df===0?'r-today':df<0?'r-past':'';
+        const isCleared=(r.status||'Outstanding').toLowerCase()==='cleared';
+        const chqEsc=r.cheque.replace(/'/g,"\\'");
+        return`<tr class="${rc}">
+          <td class="mono">${fmtDMY(r.date)}</td>
+          <td class="mono">${r.cheque}</td>
+          <td><span class="pill ${r.account==='MAIN 102'?'p-main':'p-qab'}">${r.account}</span></td>
+          <td>${cap(r.payee)}</td>
+          <td class="amt">${Math.round(r.amount).toLocaleString('en-KE')}</td>
+          <td class="nar">${r.narration||''}</td>
+          <td>
+            ${isCleared
+              ? `<span class="status-pill status-cleared">✓ Cleared${r.clearedDate?' '+fmtDMY(r.clearedDate):''}</span>
+                 <button class="clear-btn to-outstanding" onclick="toggleCleared('${chqEsc}','${r.account}',false)" title="Revert to Outstanding">↺</button>`
+              : `<span class="status-pill status-outstanding">○ Outstanding</span>
+                 <button class="clear-btn to-clear" onclick="toggleCleared('${chqEsc}','${r.account}',true)" title="Mark as Cleared">✓ Clear</button>`
+            }
+          </td>
+          <td class="del-col"><button class="del-btn" title="Delete" onclick="deleteEntry('${chqEsc}','${r.account}')">🗑</button></td>
+        </tr>`;
+      }).join('')}
+      <tr class="tr-tot">
+        <td colspan="4"><strong>TOTAL — ${rows.length} cheque(s)</strong></td>
+        <td class="amt">${Math.round(tot).toLocaleString('en-KE')}</td>
+        <td colspan="3"></td>
+      </tr>
+    </tbody></table></div>`;
+}
+
+function secH(icon,label,cnt,tot,colour){
+  return`<div class="sec-hdr">
+    <span style="font-size:16px">${icon}</span>
+    <h2>${label}</h2><span class="sec-bdg">${cnt}</span>
+    <div class="sec-ln"></div>
+    <span class="sec-tot" style="color:${colour||'var(--green)'}">${fmt(tot)}</span>
+  </div>`;
+}
+
+// ─── SUMMARY: TOTAL TO DATE & MONTH TO DATE ───────────────────────────────
+function categorise(narration){
+  const n=(narration||'').toLowerCase();
+  if(/salar(y|ies)|nssf|sha|paye|housing levy|nita/.test(n)) return 'Salaries & Statutory';
+  if(/kplc|electric/.test(n)) return 'Electricity';
+  if(/water|sewerage|tanker/.test(n)) return 'Water';
+  if(/security|cesbon|labbayk|farhan haroon/.test(n)) return 'Security Services';
+  if(/medical|medicine|hospital|jalaram|chemist/.test(n)) return 'Medical Donations';
+  if(/school fees|university|college|academy|education/.test(n)) return 'Education Donations';
+  if(/rent/.test(n)) return 'Rent Donations';
+  if(/insurance|premium/.test(n)) return 'Insurance';
+  if(/renovation|construction|tile|timber|hardware|steel|grave/.test(n)) return 'Construction & Renovations';
+  if(/transport|bolt|cab|faras/.test(n)) return 'Transport';
+  if(/petty cash|reimburs/.test(n)) return 'Petty Cash';
+  if(/facilitation|float|qarze|donation/.test(n)) return 'Facilitation & Donations';
+  if(/garbage|cleaning|sky tech|skytech/.test(n)) return 'Sanitation';
+  return 'Other / Miscellaneous';
+}
+
+function buildSummary(){
+  const all=filtered();
+  const monthStart=new Date(TODAY.getFullYear(),TODAY.getMonth(),1);
+
+  const mtdRows=all.filter(r=>{const d=parseISO(r.date);return d&&d>=monthStart&&d<=TODAY});
+  const totalRows=all.filter(r=>{const d=parseISO(r.date);return d&&d<=TODAY});
+
+  function catBreakdown(rows){
+    const map={};
+    rows.forEach(r=>{
+      const c=categorise(r.narration);
+      map[c]=(map[c]||0)+r.amount;
+    });
+    return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  }
+
+  function catTable(rows,barClass){
+    const cats=catBreakdown(rows);
+    if(!cats.length)return `<div class="a-empty">✓ No cheques recorded yet</div>`;
+    const max=cats[0][1];
+    return `<table class="cat-table">
+      <thead><tr><th>Expenditure Header</th><th class="r">Amount (KES)</th></tr></thead>
+      <tbody>
+        ${cats.map(([name,amt])=>`<tr>
+          <td class="cat-name">${name}<div class="cat-bar ${barClass}"><span class="cat-bar-fill" style="width:${Math.max(4,Math.round(amt/max*100))}%"></span></div></td>
+          <td class="r cat-amt">${Math.round(amt).toLocaleString('en-KE')}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  }
+
+  function acctRow(rows){
+    return ['MAIN 102','QAB 107'].map(a=>{
+      const s=rows.filter(r=>r.account===a);
+      if(!s.length)return'';
+      return`<div class="achip ${a==='MAIN 102'?'achip-main':'achip-qab'}">
+        <span class="achip-lbl">${a}</span>
+        <span class="achip-val">${fmt(s.reduce((t,r)=>t+r.amount,0))}</span>
+        <span class="achip-cnt">${s.length} chq${s.length>1?'s':''}</span>
+      </div>`;
+    }).join('');
+  }
+
+  const monthName=TODAY.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  const mtdTotal=mtdRows.reduce((s,r)=>s+r.amount,0);
+  const allTotal=totalRows.reduce((s,r)=>s+r.amount,0);
+
+  document.getElementById('summaryArea').innerHTML=`
+    <div class="sum-card sum-mtd">
+      <div class="sum-title">📊 Month to Date</div>
+      <div class="sum-sub">${monthName}</div>
+      <div class="sum-stats">
+        <div><div class="sum-val">${mtdRows.length}</div><div class="sum-lbl">Cheques Issued</div></div>
+        <div><div class="sum-val">${fmt(mtdTotal)}</div><div class="sum-lbl">Total Expenditure</div></div>
+      </div>
+      <div class="achips">${acctRow(mtdRows)}</div>
+      ${catTable(mtdRows,'cat-bar-mtd')}
+    </div>
+    <div class="sum-card sum-total">
+      <div class="sum-title">🗂️ Total to Date</div>
+      <div class="sum-sub">All records up to today</div>
+      <div class="sum-stats">
+        <div><div class="sum-val">${totalRows.length}</div><div class="sum-lbl">Cheques Issued</div></div>
+        <div><div class="sum-val">${fmt(allTotal)}</div><div class="sum-lbl">Total Expenditure</div></div>
+      </div>
+      <div class="achips">${acctRow(totalRows)}</div>
+      ${catTable(totalRows,'cat-bar-total')}
+    </div>`;
+}
+
+// ─── RECONCILIATION VIEW ───────────────────────────────────────────────────
+function renderRecon(){
+  const all=filtered();
+  const outstanding=all.filter(r=>(r.status||'Outstanding').toLowerCase()!=='cleared');
+  const cleared=all.filter(r=>(r.status||'').toLowerCase()==='cleared');
+
+  const outTotal=outstanding.reduce((s,r)=>s+r.amount,0);
+  const clrTotal=cleared.reduce((s,r)=>s+r.amount,0);
+
+  function acctLine(rows,label){
+    return ['MAIN 102','QAB 107'].map(a=>{
+      const s=rows.filter(r=>r.account===a);
+      return `<div class="rc-sub"><strong>${a}:</strong> ${s.length} chq · ${fmt(s.reduce((t,r)=>t+r.amount,0))}</div>`;
+    }).join('');
+  }
+
+  let h=`<div class="recon-summary">
+    <div class="recon-card recon-out">
+      <div class="rc-title">⏳ Outstanding — Not Yet Cleared</div>
+      <div class="rc-val">${fmt(outTotal)}</div>
+      <div class="rc-sub">${outstanding.length} cheque(s) issued but not yet reflected on bank statement</div>
+      ${acctLine(outstanding)}
+    </div>
+    <div class="recon-card recon-clr">
+      <div class="rc-title">✅ Cleared by Bank</div>
+      <div class="rc-val">${fmt(clrTotal)}</div>
+      <div class="rc-sub">${cleared.length} cheque(s) confirmed cleared</div>
+      ${acctLine(cleared)}
+    </div>
+  </div>`;
+
+  h+=secH('⏳','Outstanding Cheques — click "Clear" once the bank statement confirms',outstanding.length,outTotal,'var(--amber)')+tbl(outstanding);
+  h+=secH('✅','Cleared Cheques',cleared.length,clrTotal,'var(--green-bright)')+tbl(cleared);
+  return h;
+}
+
+// ─── PLANNED EXPENSES TABLE ─────────────────────────────────────────────────
+function plannedTbl(rows){
+  if(!rows.length)return`<div class="empty">No planned expenses recorded. Click "+ Planned Expense" above to add one — e.g. next week's salaries.</div>`;
+  const tot=rows.reduce((s,r)=>s+r.amount,0);
+  return`<div class="tw"><table>
+    <thead><tr>
+      <th>Expected Date</th><th>Description</th><th>Category</th><th>Account</th>
+      <th class="r">Est. Amount (KES)</th><th class="del-col"></th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r=>`<tr>
+          <td class="mono">${fmtDMY(r.date)}</td>
+          <td>${r.description}</td>
+          <td><span class="planned-pill">${r.category||'Other'}</span></td>
+          <td><span class="pill ${r.account==='MAIN 102'?'p-main':'p-qab'}">${r.account}</span></td>
+          <td class="amt">${Math.round(r.amount).toLocaleString('en-KE')}</td>
+          <td class="del-col"><button class="del-btn" title="Delete" onclick="deletePlannedEntry(${r._row})">🗑</button></td>
+        </tr>`).join('')}
+      <tr class="tr-tot">
+        <td colspan="4"><strong>TOTAL PLANNED — ${rows.length} item(s)</strong></td>
+        <td class="amt">${Math.round(tot).toLocaleString('en-KE')}</td>
+        <td></td>
+      </tr>
+    </tbody></table></div>`;
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────
+function render(){
+  buildAlerts();
+  buildSummary();
+  const all=filtered();
+  const out=document.getElementById('mainOut');
+  if(view==='timeline'){
+    const we=getWeekEnd();
+    const nw=getNextWeekRange();
+    const g={today:[],tomorrow:[],week:[],nextweek:[],upcoming:[],past:[]};
+    all.forEach(r=>{
+      const d=parseISO(r.date);if(!d){g.past.push(r);return}
+      const df=diffDays(d);
+      if(df===0)g.today.push(r);
+      else if(df===1)g.tomorrow.push(r);
+      else if(df>=2&&d<=we)g.week.push(r);
+      else if(d>=nw.start&&d<=nw.end)g.nextweek.push(r);
+      else if(df>0)g.upcoming.push(r);
+      else g.past.push(r);
+    });
+    const plannedFiltered=PLANNED.filter(r=>acc==='ALL'||r.account===acc);
+    let h='';
+    if(g.today.length)    h+=secH('🟡','Due Today',g.today.length,g.today.reduce((s,r)=>s+r.amount,0),'var(--gold)')+tbl(g.today);
+    if(g.tomorrow.length) h+=secH('🔵','Tomorrow',g.tomorrow.length,g.tomorrow.reduce((s,r)=>s+r.amount,0),'var(--blue)')+tbl(g.tomorrow);
+    if(g.week.length)     h+=secH('🟢','Rest of This Week',g.week.length,g.week.reduce((s,r)=>s+r.amount,0),'var(--teal)')+tbl(g.week);
+    if(g.nextweek.length) h+=secH('🔭','Expected Next Week',g.nextweek.length,g.nextweek.reduce((s,r)=>s+r.amount,0),'var(--purple)')+tbl(g.nextweek);
+    if(g.upcoming.length) h+=secH('🟣','Upcoming (beyond next week)',g.upcoming.length,g.upcoming.reduce((s,r)=>s+r.amount,0),'#7b1fa2')+tbl(g.upcoming);
+    if(plannedFiltered.length) h+=secH('📋','Planned / Provisional Expenses',plannedFiltered.length,plannedFiltered.reduce((s,r)=>s+r.amount,0),'var(--purple)')+plannedTbl(plannedFiltered);
+    if(g.past.length)     h+=secH('⚫','Historical Records',g.past.length,g.past.reduce((s,r)=>s+r.amount,0),'var(--muted)')+tbl(g.past);
+    if(!h)h=`<div class="empty">No entries match your filters.</div>`;
+    out.innerHTML=h;
+  } else if(view==='recon'){
+    out.innerHTML=renderRecon();
+  } else {
+    let h=secH('📋','All Cheque Entries',all.length,all.reduce((s,r)=>s+r.amount,0),'var(--green)')+tbl(all);
+    const plannedFiltered=PLANNED.filter(r=>acc==='ALL'||r.account===acc);
+    h+=secH('🔮','All Planned Expenses',plannedFiltered.length,plannedFiltered.reduce((s,r)=>s+r.amount,0),'var(--purple)')+plannedTbl(plannedFiltered);
+    out.innerHTML=h;
+  }
+}
+
+// ─── CONTROLS ────────────────────────────────────────────────────────────
+function setAcc(a){
+  acc=a;
+  document.getElementById('tab-ALL').classList.toggle('active',a==='ALL');
+  document.getElementById('tab-MAIN').classList.toggle('active',a==='MAIN 102');
+  document.getElementById('tab-QAB').classList.toggle('active',a==='QAB 107');
+  render();
+}
+function setView(v){
+  view=v;
+  document.getElementById('view-timeline').classList.toggle('active',v==='timeline');
+  document.getElementById('view-all').classList.toggle('active',v==='all');
+  document.getElementById('view-recon').classList.toggle('active',v==='recon');
+  render();
+}
+function toggleAdd(){
+  const p=document.getElementById('addPanel');
+  p.classList.toggle('open');
+  if(p.classList.contains('open')){
+    const now=new Date();
+    document.getElementById('in_date').value=
+      `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+  }
+}
+function togglePlanned(){
+  const p=document.getElementById('plannedPanel');
+  p.classList.toggle('open');
+  if(p.classList.contains('open')){
+    const now=new Date(TODAY); now.setDate(now.getDate()+7);
+    document.getElementById('pl_date').value=
+      `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+  }
+}
+
+
+// ─── OVERRIDE: set view updates both sidebar + toolbar tabs ────────────────
+const _origSetView = setView;
+function setView(v){
+  view=v;
+  ['timeline','all','recon','planned'].forEach(x=>{
+    const tb=document.getElementById('view-'+x);
+    const nb=document.getElementById('nav-'+x);
+    if(tb)tb.classList.toggle('active',x===v);
+    if(nb)nb.classList.toggle('active',x===v);
+  });
+  render();
+}
+
+function setAcc(a){
+  acc=a;
+  ['ALL','MAIN','QAB'].forEach(x=>{
+    const el=document.getElementById('acc-'+x);
+    if(el)el.classList.toggle('active',
+      (x==='ALL'&&a==='ALL')||(x==='MAIN'&&a==='MAIN 102')||(x==='QAB'&&a==='QAB 107'));
+  });
+  render();
+}
+
+// ─── MONTH FILTER helper ─────────────────────────────────────────────────
+function monthFiltered(rows){
+  const mf=document.getElementById('monthFilter');
+  if(!mf||!mf.value)return rows;
+  const[fy,fm]=mf.value.split('-').map(Number);
+  return rows.filter(r=>{
+    const d=parseISO(r.date);
+    return d&&d.getFullYear()===fy&&d.getMonth()+1===fm;
+  });
+}
+
+// ─── SIDEBAR QUICK TOTALS ─────────────────────────────────────────────────
+function buildSidebarKPIs(){
+  const all=filtered();
+  const totalRows=all.filter(r=>{const d=parseISO(r.date);return d&&d<=TODAY});
+  const outstanding=all.filter(r=>(r.status||'').toLowerCase()!=='cleared'&&parseISO(r.date)&&parseISO(r.date)<=TODAY);
+  const monthStart=new Date(TODAY.getFullYear(),TODAY.getMonth(),1);
+  const mtd=all.filter(r=>{const d=parseISO(r.date);return d&&d>=monthStart&&d<=TODAY});
+
+  document.getElementById('sk-total').innerHTML=`
+    <div class="mini-kpi-label">Total Issued</div>
+    <div class="mini-kpi-val">${fmt(totalRows.reduce((s,r)=>s+r.amount,0)).replace('KES ','KES')}</div>
+    <div class="mini-kpi-sub">${totalRows.length} cheques</div>`;
+
+  document.getElementById('sk-outstanding').innerHTML=`
+    <div class="mini-kpi-label">Outstanding</div>
+    <div class="mini-kpi-val">${fmt(outstanding.reduce((s,r)=>s+r.amount,0)).replace('KES ','KES')}</div>
+    <div class="mini-kpi-sub">${outstanding.length} uncleared</div>`;
+
+  document.getElementById('sk-mtd').innerHTML=`
+    <div class="mini-kpi-label">This Month</div>
+    <div class="mini-kpi-val">${fmt(mtd.reduce((s,r)=>s+r.amount,0)).replace('KES ','KES')}</div>
+    <div class="mini-kpi-sub">${mtd.length} cheques</div>`;
+
+  // Badge counts
+  const reconBadge=document.getElementById('nav-recon-badge');
+  if(reconBadge)reconBadge.textContent=outstanding.length;
+  const plannedBadge=document.getElementById('nav-planned-badge');
+  if(plannedBadge)plannedBadge.textContent=PLANNED.filter(r=>acc==='ALL'||r.account===acc).length;
+}
+
+// ─── KPI STRIP (replaces alert cards) ───────────────────────────────────
+function buildKPIs(){
+  const all=filtered();
+  const we=getWeekEnd();
+  const nw=getNextWeekRange();
+  const tdy=all.filter(r=>{const d=parseISO(r.date);return d&&diffDays(d)===0});
+  const tom=all.filter(r=>{const d=parseISO(r.date);return d&&diffDays(d)===1});
+  const wk=all.filter(r=>{const d=parseISO(r.date);if(!d)return false;const df=diffDays(d);return df>=2&&d<=we});
+  const nxt=all.filter(r=>{const d=parseISO(r.date);if(!d)return false;return d>=nw.start&&d<=nw.end});
+  const pf=PLANNED.filter(r=>acc==='ALL'||r.account===acc);
+  const weStr=we.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+  const nwStr=`${nw.start.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})} – ${nw.end.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})}`;
+
+  function chips(arr){
+    const m=arr.filter(r=>r.account==='MAIN 102');
+    const q=arr.filter(r=>r.account==='QAB 107');
+    if(!arr.length)return`<div class="kpi-empty">✓ None scheduled</div>`;
+    return`${m.length?`<div class="kpi-chip kpi-chip-main"><span class="kpi-chip-lbl">MAIN</span><span class="kpi-chip-val">${fmt(m.reduce((s,r)=>s+r.amount,0))}</span></div>`:''}<br>
+    ${q.length?`<div class="kpi-chip kpi-chip-qab"><span class="kpi-chip-lbl">QAB</span><span class="kpi-chip-val">${fmt(q.reduce((s,r)=>s+r.amount,0))}</span></div>`:''}`;
+  }
+
+  function items(arr,max=3){
+    if(!arr.length)return'';
+    return`<div class="kpi-items">${arr.slice(0,max).map(r=>`<div class="kpi-item">
+      <span class="pill ${r.account==='MAIN 102'?'p-main':'p-qab'}" style="font-size:8px;padding:1px 5px">${r.account==='MAIN 102'?'M':'Q'}</span>
+      <span style="flex:1;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cap(r.payee||r.description)}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;color:var(--text)">${Math.round(r.amount).toLocaleString('en-KE')}</span>
+    </div>`).join('')}</div>${arr.length>max?`<div style="font-size:10px;color:var(--muted);text-align:right;margin-top:4px">+${arr.length-max} more</div>`:''}`;
+  }
+
+  const kpis=[
+    {cls:'kpi-today',icon:'⚡',label:'Due Today',date:TODAY.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}),arr:tdy},
+    {cls:'kpi-tomorrow',icon:'📅',label:'Tomorrow',date:new Date(TODAY.getTime()+86400000).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short'}),arr:tom},
+    {cls:'kpi-week',icon:'📆',label:'Rest of Week',date:'to '+weStr,arr:wk},
+    {cls:'kpi-next',icon:'🔭',label:'Next Week',date:nwStr,arr:nxt},
+    {cls:'kpi-planned',icon:'📋',label:'Planned Provisions',date:pf.length+' item'+(pf.length!==1?'s':''),arr:pf,isPlanned:true},
+  ];
+
+  document.getElementById('kpiStrip').innerHTML=kpis.map(k=>`
+    <div class="kpi-card ${k.cls}">
+      <div class="kpi-label">${k.icon} ${k.label}</div>
+      <div class="kpi-value">${fmt(k.arr.reduce((s,r)=>s+r.amount,0))}</div>
+      <div class="kpi-sub">${k.arr.length} cheque${k.arr.length!==1?'s':''} · ${k.date}</div>
+      ${chips(k.arr)}
+      ${items(k.arr)}
+    </div>`).join('');
+}
+
+// ─── OVERRIDE render to include new panels ────────────────────────────────
+const _origRender=render;
+function render(){
+  buildKPIs();
+  buildSummary();
+  buildSidebarKPIs();
+
+  const all=monthFiltered(filtered());
+  const out=document.getElementById('mainOut');
+
+  if(view==='planned'){
+    const pf=PLANNED.filter(r=>acc==='ALL'||r.account===acc);
+    out.innerHTML=secH('🔮','All Planned / Provisional Expenses',pf.length,pf.reduce((s,r)=>s+r.amount,0),'var(--orange)')+plannedTbl(pf);
+    return;
+  }
+
+  if(view==='recon'){
+    out.innerHTML=renderRecon();
+    return;
+  }
+
+  if(view==='all'){
+    let h=secH('📋','All Cheque Entries',all.length,all.reduce((s,r)=>s+r.amount,0),'var(--green)')+tbl(all);
+    out.innerHTML=h;
+    return;
+  }
+
+  // TIMELINE view
+  const we=getWeekEnd();
+  const nw=getNextWeekRange();
+  const g={today:[],tomorrow:[],week:[],nextweek:[],upcoming:[],past:[]};
+  all.forEach(r=>{
+    const d=parseISO(r.date);if(!d){g.past.push(r);return}
+    const df=diffDays(d);
+    if(df===0)g.today.push(r);
+    else if(df===1)g.tomorrow.push(r);
+    else if(df>=2&&d<=we)g.week.push(r);
+    else if(d>=nw.start&&d<=nw.end)g.nextweek.push(r);
+    else if(df>0)g.upcoming.push(r);
+    else g.past.push(r);
+  });
+
+  let h='';
+  if(g.today.length)    h+=secH('⚡','Due Today — ACTION REQUIRED',g.today.length,g.today.reduce((s,r)=>s+r.amount,0),'var(--gold)')+tbl(g.today);
+  if(g.tomorrow.length) h+=secH('📅','Tomorrow',g.tomorrow.length,g.tomorrow.reduce((s,r)=>s+r.amount,0),'var(--blue)')+tbl(g.tomorrow);
+  if(g.week.length)     h+=secH('📆','Rest of This Week',g.week.length,g.week.reduce((s,r)=>s+r.amount,0),'var(--teal)')+tbl(g.week);
+  if(g.nextweek.length) h+=secH('🔭','Expected Next Week',g.nextweek.length,g.nextweek.reduce((s,r)=>s+r.amount,0),'var(--purple)')+tbl(g.nextweek);
+  if(g.upcoming.length) h+=secH('🟣','Upcoming',g.upcoming.length,g.upcoming.reduce((s,r)=>s+r.amount,0),'#7b1fa2')+tbl(g.upcoming);
+  if(g.past.length)     h+=secH('📁','Historical Records',g.past.length,g.past.reduce((s,r)=>s+r.amount,0),'var(--muted)')+tbl(g.past);
+  if(!h)h=`<div class="empty">No entries match the current filter.</div>`;
+  out.innerHTML=h;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+//  LAYOUT OVERRIDES — sidebar nav, KPI strip, month filter, new render
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── MONTH FILTER ────────────────────────────────────────────────────
+function monthFiltered(rows) {
+  const mf = document.getElementById('monthFilter');
+  if (!mf || !mf.value) return rows;
+  const [fy, fm] = mf.value.split('-').map(Number);
+  return rows.filter(r => {
+    const d = parseISO(r.date);
+    return d && d.getFullYear() === fy && d.getMonth() + 1 === fm;
+  });
+}
+
+// ─── SIDEBAR QUICK TOTALS ────────────────────────────────────────────
+function buildSidebarKPIs() {
+  const all = filtered();
+  const past = all.filter(r => { const d = parseISO(r.date); return d && d <= TODAY; });
+  const outstanding = past.filter(r => (r.status || '').toLowerCase() !== 'cleared');
+  const monthStart = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+  const mtd = past.filter(r => { const d = parseISO(r.date); return d && d >= monthStart; });
+  const pf = PLANNED.filter(r => acc === 'ALL' || r.account === acc);
+
+  const el = (id, lbl, val, sub) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<div class="mini-label">' + lbl + '</div><div class="mini-val">' + val + '</div><div class="mini-sub">' + sub + '</div>';
+  };
+  el('sk-total',   'Total Issued',    fmt(past.reduce((s,r)=>s+r.amount,0)),    past.length + ' cheques');
+  el('sk-outstanding', 'Outstanding', fmt(outstanding.reduce((s,r)=>s+r.amount,0)), outstanding.length + ' uncleared');
+  el('sk-mtd',     'This Month',      fmt(mtd.reduce((s,r)=>s+r.amount,0)),     mtd.length + ' cheques');
+
+  const rb = document.getElementById('sb-recon-bdg');
+  if (rb) rb.textContent = outstanding.length;
+  const pb = document.getElementById('sb-planned-bdg');
+  if (pb) pb.textContent = pf.length;
+}
+
+// ─── KPI STRIP ────────────────────────────────────────────────────────
+// ─── KPI MODAL DRAWER ────────────────────────────────────────────────
+function openKpiModal(title, colour, rows, isPlanned) {
+  let modal = document.getElementById('kpiModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'kpiModal';
+    modal.innerHTML = `
+      <div id="kpiBackdrop" onclick="closeKpiModal()" style="position:fixed;inset:0;background:rgba(0,40,10,0.45);z-index:900;animation:fadeIn .2s"></div>
+      <div id="kpiDrawer" style="position:fixed;top:0;right:0;height:100vh;width:min(680px,95vw);background:#fff;z-index:901;box-shadow:-8px 0 40px rgba(0,60,20,0.18);display:flex;flex-direction:column;animation:slideIn .25s ease">
+        <div id="kpiDrawerHead" style="padding:18px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0">
+          <div>
+            <div id="kpiDrawerTitle" style="font-size:15px;font-weight:800;color:var(--text)"></div>
+            <div id="kpiDrawerSub" style="font-size:11px;color:var(--muted);margin-top:2px"></div>
+          </div>
+          <button onclick="closeKpiModal()" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--muted)">✕</button>
+        </div>
+        <div id="kpiDrawerSummary" style="padding:14px 22px;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;display:flex;gap:16px;flex-wrap:wrap"></div>
+        <div id="kpiDrawerBody" style="flex:1;overflow-y:auto;padding:20px 22px"></div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  const tot = rows.reduce((s,r)=>s+r.amount,0);
+  const m = rows.filter(r=>r.account==='MAIN 102');
+  const q = rows.filter(r=>r.account==='QAB 107');
+
+  document.getElementById('kpiDrawerTitle').textContent = title;
+  document.getElementById('kpiDrawerHead').style.borderTop = '4px solid ' + colour;
+
+  document.getElementById('kpiDrawerSub').textContent = rows.length + ' entr' + (rows.length===1?'y':'ies') + (isPlanned?' — provisional':'');
+
+  document.getElementById('kpiDrawerSummary').innerHTML =
+    `<div style="background:#fff;border-radius:8px;padding:10px 16px;border:1px solid var(--border);text-align:center;min-width:140px">
+       <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--muted2);margin-bottom:3px">Total</div>
+       <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:800;color:${colour}">${fmt(tot)}</div>
+     </div>` +
+    (m.length ? `<div style="background:#eaf2ff;border-radius:8px;padding:10px 16px;border:1px solid #c9deff;min-width:130px">
+       <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#1a4a99;margin-bottom:3px">MAIN 102</div>
+       <div style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:800;color:#1a4a99">${fmt(m.reduce((s,r)=>s+r.amount,0))}</div>
+       <div style="font-size:10px;color:var(--muted)">${m.length} chq${m.length!==1?'s':''}</div>
+     </div>` : '') +
+    (q.length ? `<div style="background:var(--gold-light);border-radius:8px;padding:10px 16px;border:1px solid #ecdf9e;min-width:130px">
+       <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#6b5c00;margin-bottom:3px">QAB 107</div>
+       <div style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:800;color:#6b5c00">${fmt(q.reduce((s,r)=>s+r.amount,0))}</div>
+       <div style="font-size:10px;color:var(--muted)">${q.length} chq${q.length!==1?'s':''}</div>
+     </div>` : '');
+
+  // Full detail table
+  let tableHTML = '';
+  if (!rows.length) {
+    tableHTML = '<div style="text-align:center;padding:40px;color:var(--muted);font-style:italic">No entries for this period</div>';
+  } else if (isPlanned) {
+    tableHTML = `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <thead><tr style="background:linear-gradient(120deg,var(--green),var(--green-mid))">
+        <th style="padding:10px 13px;color:#fff;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px">Expected Date</th>
+        <th style="padding:10px 13px;color:#fff;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px">Description</th>
+        <th style="padding:10px 13px;color:#fff;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px">Category</th>
+        <th style="padding:10px 13px;color:#fff;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px">Account</th>
+        <th style="padding:10px 13px;color:#fff;text-align:right;font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px">Est. Amount</th>
+      </tr></thead><tbody>` +
+      rows.map((r,i) => `<tr style="background:${i%2===0?'#fff':'var(--bg)'}">
+        <td style="padding:10px 13px;font-family:'JetBrains Mono',monospace;font-size:11.5px">${fmtDMY(r.date)}</td>
+        <td style="padding:10px 13px;font-weight:600">${r.description||'—'}</td>
+        <td style="padding:10px 13px"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:9.5px;font-weight:700;background:var(--orange-l);color:var(--orange)">${r.category||'General'}</span></td>
+        <td style="padding:10px 13px"><span class="pill ${r.account==='MAIN 102'?'p-main':'p-qab'}">${r.account}</span></td>
+        <td style="padding:10px 13px;font-family:'JetBrains Mono',monospace;font-weight:700;text-align:right;color:var(--orange)">${Math.round(r.amount).toLocaleString('en-KE')}</td>
+      </tr>`).join('') +
+      `<tr style="background:var(--green-light);border-top:2px solid var(--green)">
+        <td colspan="4" style="padding:10px 13px;font-weight:700">TOTAL — ${rows.length} item(s)</td>
+        <td style="padding:10px 13px;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:14px;text-align:right;color:var(--green)">${Math.round(tot).toLocaleString('en-KE')}</td>
+      </tr></tbody></table>`;
+  } else {
+    const isCleared = r => (r.status||'').toLowerCase() === 'cleared';
+    tableHTML = `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <thead><tr style="background:linear-gradient(120deg,var(--green),var(--green-mid))">
+        <th style="padding:10px 13px;color:#fff;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px">Date</th>
+        <th style="padding:10px 13px;color:#fff;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px">Cheque No.</th>
+        <th style="padding:10px 13px;color:#fff;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px">Account</th>
+        <th style="padding:10px 13px;color:#fff;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px">Payee</th>
+        <th style="padding:10px 13px;color:#fff;text-align:right;font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px">Amount (KES)</th>
+        <th style="padding:10px 13px;color:#fff;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px">Narration</th>
+        <th style="padding:10px 13px;color:#fff;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:0.8px">Status</th>
+      </tr></thead><tbody>` +
+      rows.map((r,i) => {
+        const clrd = isCleared(r);
+        return `<tr style="background:${i%2===0?'#fff':'var(--bg)'}">
+          <td style="padding:10px 13px;font-family:'JetBrains Mono',monospace;font-size:11.5px">${fmtDMY(r.date)}</td>
+          <td style="padding:10px 13px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600">${r.cheque}</td>
+          <td style="padding:10px 13px"><span class="pill ${r.account==='MAIN 102'?'p-main':'p-qab'}">${r.account}</span></td>
+          <td style="padding:10px 13px;font-weight:600">${cap(r.payee)}</td>
+          <td style="padding:10px 13px;font-family:'JetBrains Mono',monospace;font-weight:700;text-align:right;color:var(--green)">${Math.round(r.amount).toLocaleString('en-KE')}</td>
+          <td style="padding:10px 13px;font-size:11px;color:var(--muted);max-width:200px">${r.narration||'—'}</td>
+          <td style="padding:10px 13px">
+            <span class="status-pill ${clrd?'status-cleared':'status-outstanding'}">${clrd?'✓ Cleared':'○ Outstanding'}</span>
+            ${clrd&&r.clearedDate?'<div style="font-size:9.5px;color:var(--muted);margin-top:2px">'+fmtDMY(r.clearedDate)+'</div>':''}
+          </td>
+        </tr>`;
+      }).join('') +
+      `<tr style="background:var(--green-light);border-top:2px solid var(--green)">
+        <td colspan="4" style="padding:10px 13px;font-weight:700">TOTAL — ${rows.length} cheque(s)</td>
+        <td style="padding:10px 13px;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:14px;text-align:right;color:var(--green)">${Math.round(tot).toLocaleString('en-KE')}</td>
+        <td colspan="2"></td>
+      </tr></tbody></table>`;
+  }
+
+  document.getElementById('kpiDrawerBody').innerHTML = tableHTML;
+  modal.style.display = 'block';
+}
+
+function closeKpiModal() {
+  const m = document.getElementById('kpiModal');
+  if (m) m.style.display = 'none';
+}
+
+// Close on Escape key
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeKpiModal(); });
+
+function buildKPIs() {
+  const all = filtered();
+  const we  = getWeekEnd();
+  const nw  = getNextWeekRange();
+  const pf  = PLANNED.filter(r => acc === 'ALL' || r.account === acc);
+
+  const tdy = all.filter(r => { const d = parseISO(r.date); return d && diffDays(d) === 0; });
+  const tom = all.filter(r => { const d = parseISO(r.date); return d && diffDays(d) === 1; });
+  const wk  = all.filter(r => { const d = parseISO(r.date); if (!d) return false; const df = diffDays(d); return df >= 2 && d <= we; });
+  const nxt = all.filter(r => { const d = parseISO(r.date); if (!d) return false; return d >= nw.start && d <= nw.end; });
+
+  const weStr = we.toLocaleDateString('en-GB', {day:'2-digit',month:'short'});
+  const nwStr = nw.start.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) + ' – ' + nw.end.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+
+  function chips(arr) {
+    const m = arr.filter(r => r.account === 'MAIN 102');
+    const q = arr.filter(r => r.account === 'QAB 107');
+    if (!arr.length) return '<div class="kpi-none">None scheduled</div>';
+    let h = '<div class="acct-chips">';
+    if (m.length) h += '<div class="ac ac-main"><span class="ac-lbl">MAIN</span><span class="ac-val">' + fmt(m.reduce((s,r)=>s+r.amount,0)) + '</span></div>';
+    if (q.length) h += '<div class="ac ac-qab"><span class="ac-lbl">QAB</span><span class="ac-val">' + fmt(q.reduce((s,r)=>s+r.amount,0)) + '</span></div>';
+    return h + '</div>';
+  }
+
+  function itemRows(arr, max) {
+    if (!arr.length) return '';
+    let h = '<div class="kpi-rows">';
+    arr.slice(0, max).forEach(r => {
+      h += '<div class="kpi-row"><span class="pill ' + (r.account==='MAIN 102'?'p-main':'p-qab') + '" style="font-size:8px;padding:1px 5px">' + (r.account==='MAIN 102'?'M':'Q') + '</span>';
+      h += '<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + cap(r.payee || r.description) + '</span>';
+      h += '<span style="font-family:JetBrains Mono,monospace;font-weight:700">' + Math.round(r.amount).toLocaleString('en-KE') + '</span></div>';
+    });
+    h += '</div>';
+    if (arr.length > max) h += '<div style="font-size:9.5px;color:var(--muted);text-align:right;margin-top:3px">+' + (arr.length - max) + ' more — click card to see all</div>';
+    return h;
+  }
+
+  const COLOURS = {
+    'kc-today':'var(--gold-b)', 'kc-tomorrow':'var(--blue)',
+    'kc-week':'var(--teal)',    'kc-next':'var(--purple)', 'kc-planned':'var(--orange)'
+  };
+
+  const kpis = [
+    { cls:'kc-today',    icon:'⚡', label:'Due Today',          sub: TODAY.toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short'}),                                                         arr:tdy },
+    { cls:'kc-tomorrow', icon:'📅', label:'Tomorrow',           sub: new Date(TODAY.getTime()+86400000).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short'}),                            arr:tom },
+    { cls:'kc-week',     icon:'📆', label:'Rest of Week',       sub: 'to ' + weStr,                                                                                                                          arr:wk  },
+    { cls:'kc-next',     icon:'🔭', label:'Next Week',          sub: nwStr,                                                                                                                                   arr:nxt },
+    { cls:'kc-planned',  icon:'📋', label:'Planned Provisions', sub: pf.length + ' item' + (pf.length !== 1 ? 's' : '') + ' — click to view',                                                               arr:pf, isPlanned:true },
+  ];
+
+  const strip = document.getElementById('kpiStrip');
+  if (!strip) return;
+
+  // Store data for modal access
+  window._kpiData = kpis;
+
+  strip.innerHTML = kpis.map((k, idx) => {
+    const total = fmt(k.arr.reduce((s,r)=>s+r.amount,0));
+    const colour = COLOURS[k.cls];
+    return `<div class="kpi-card ${k.cls}" onclick="openKpiModal('${k.label}','${colour}',window._kpiData[${idx}].arr,${!!k.isPlanned})" title="Click to view full details" style="cursor:pointer">
+      <div class="kpi-icon-row"><div class="kpi-icon">${k.icon}</div><span class="kpi-count">${k.arr.length} ${k.isPlanned?'item':'chq'}${k.arr.length!==1?'s':''}</span></div>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${total}</div>
+      <div class="kpi-date">${k.sub}</div>
+      ${chips(k.arr)}
+      ${itemRows(k.arr, 3)}
+      <div style="font-size:9px;color:var(--muted2);text-align:center;margin-top:8px;padding-top:6px;border-top:1px dashed var(--border)">&#128269; Click for full details</div>
+    </div>`;
+  }).join('');
+}
+
+
+// ─── OVERRIDE setView ─────────────────────────────────────────────────
+function setView(v) {
+  view = v;
+  ['timeline','all','recon','planned'].forEach(x => {
+    const tb = document.getElementById('view-' + x);
+    const nb = document.getElementById('nav-' + x);
+    if (tb) tb.classList.toggle('active', x === v);
+    if (nb) nb.classList.toggle('active', x === v);
+  });
+  render();
+}
+
+// ─── OVERRIDE setAcc ─────────────────────────────────────────────────
+function setAcc(a) {
+  acc = a;
+  // Sidebar nav
+  ['ALL','MAIN','QAB'].forEach(x => {
+    const el = document.getElementById('acc-' + x);
+    if (el) el.classList.toggle('active', (x==='ALL'&&a==='ALL')||(x==='MAIN'&&a==='MAIN 102')||(x==='QAB'&&a==='QAB 107'));
+  });
+  // Toolbar tabs
+  ['ALL','MAIN','QAB'].forEach(x => {
+    const el = document.getElementById('tb-' + x);
+    if (el) el.classList.toggle('active', (x==='ALL'&&a==='ALL')||(x==='MAIN'&&a==='MAIN 102')||(x==='QAB'&&a==='QAB 107'));
+  });
+  render();
+}
+
+// ─── OVERRIDE render ─────────────────────────────────────────────────
+function render() {
+  buildKPIs();
+  buildSummary();
+  buildSidebarKPIs();
+
+  const all = monthFiltered(filtered());
+  const out = document.getElementById('mainOut');
+  if (!out) return;
+
+  if (view === 'planned') {
+    const pf = PLANNED.filter(r => acc === 'ALL' || r.account === acc);
+    out.innerHTML = secH('🔮', 'Planned / Provisional Expenses', pf.length, pf.reduce((s,r)=>s+r.amount,0), 'var(--orange)') + plannedTbl(pf);
+    return;
+  }
+
+  if (view === 'recon') {
+    out.innerHTML = renderRecon();
+    return;
+  }
+
+  if (view === 'all') {
+    out.innerHTML = secH('📋', 'All Cheque Entries', all.length, all.reduce((s,r)=>s+r.amount,0), 'var(--green)') + tbl(all);
+    return;
+  }
+
+  // TIMELINE
+  const we = getWeekEnd();
+  const nw = getNextWeekRange();
+  const g = { today:[], tomorrow:[], week:[], nextweek:[], upcoming:[], past:[] };
+  all.forEach(r => {
+    const d = parseISO(r.date);
+    if (!d) { g.past.push(r); return; }
+    const df = diffDays(d);
+    if (df === 0)            g.today.push(r);
+    else if (df === 1)       g.tomorrow.push(r);
+    else if (df >= 2 && d <= we) g.week.push(r);
+    else if (d >= nw.start && d <= nw.end) g.nextweek.push(r);
+    else if (df > 0)         g.upcoming.push(r);
+    else                     g.past.push(r);
+  });
+
+  const nxtPlanned = PLANNED.filter(r => {
+    if (acc !== 'ALL' && r.account !== acc) return false;
+    const d = parseISO(r.date);
+    return d && d >= nw.start && d <= nw.end;
+  });
+
+  let h = '';
+  if (g.today.length)    h += secH('⚡','Due Today — Action Required', g.today.length,    g.today.reduce((s,r)=>s+r.amount,0),   'var(--gold)')    + tbl(g.today);
+  if (g.tomorrow.length) h += secH('📅','Tomorrow',                     g.tomorrow.length, g.tomorrow.reduce((s,r)=>s+r.amount,0),'var(--blue)')    + tbl(g.tomorrow);
+  if (g.week.length)     h += secH('📆','Rest of This Week',            g.week.length,     g.week.reduce((s,r)=>s+r.amount,0),    'var(--teal)')    + tbl(g.week);
+  if (g.nextweek.length || nxtPlanned.length) {
+    const nxtTot = g.nextweek.reduce((s,r)=>s+r.amount,0) + nxtPlanned.reduce((s,r)=>s+r.amount,0);
+    h += secH('🔭','Expected Next Week', g.nextweek.length + nxtPlanned.length, nxtTot, 'var(--purple)');
+    if (g.nextweek.length) h += tbl(g.nextweek);
+    if (nxtPlanned.length) h += plannedTbl(nxtPlanned);
+  }
+  if (g.upcoming.length) h += secH('🟣','Upcoming (beyond next week)', g.upcoming.length, g.upcoming.reduce((s,r)=>s+r.amount,0),'#7b1fa2')        + tbl(g.upcoming);
+  if (g.past.length)     h += secH('📁','Historical Records',           g.past.length,     g.past.reduce((s,r)=>s+r.amount,0),   'var(--muted)')   + tbl(g.past);
+  if (!h) h = '<div class="empty">No entries match the current filter.</div>';
+  out.innerHTML = h;
+}
+
+// ─── OVERRIDE toggleAdd / togglePlanned ─────────────────────────────
+function toggleAdd() {
+  const p = document.getElementById('addPanel');
+  p.classList.toggle('open');
+  if (p.classList.contains('open')) {
+    document.getElementById('plannedPanel').classList.remove('open');
+    const now = new Date();
+    document.getElementById('in_date').value = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + now.getFullYear();
+  }
+}
+function togglePlanned() {
+  const p = document.getElementById('plannedPanel');
+  p.classList.toggle('open');
+  if (p.classList.contains('open')) {
+    document.getElementById('addPanel').classList.remove('open');
+    const now = new Date(TODAY); now.setDate(now.getDate() + 7);
+    document.getElementById('pl_date').value = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + now.getFullYear();
+  }
+}
+
+</script>
+</body>
+</html>
