@@ -406,6 +406,9 @@ tr.r-past td{background:var(--bg)}
           <span class="nav-icon">🔮</span> Planned Expenses
           <span class="nav-badge" id="nav-planned-badge">—</span>
         </div>
+        <div class="nav-item" id="nav-accounting" onclick="setView('accounting')">
+          <span class="nav-icon">📊</span> Accounting
+        </div>
       </div>
 
       <div class="sidebar-section">
@@ -430,6 +433,7 @@ tr.r-past td{background:var(--bg)}
 
       <div class="sidebar-actions">
         <button class="btn-sidebar gold" onclick="toggleAdd()">＋ Record Cheque</button>
+        <button class="btn-sidebar" style="background:var(--blue-l);color:var(--blue);border:1px solid #c9deff" onclick="toggleIncome()">＋ Record Income</button>
         <button class="btn-sidebar purple" onclick="togglePlanned()">＋ Planned Expense</button>
       </div>
     </div>
@@ -472,6 +476,38 @@ tr.r-past td{background:var(--bg)}
         </div>
       </div>
 
+      <!-- INCOME ENTRY PANEL -->
+      <div class="add-panel" id="incomePanel" style="border-color:var(--blue)">
+        <h3 style="color:var(--blue)">Record Income Received</h3>
+        <p style="font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:12px">Record money received — cemetery fees, donations, rent. This feeds directly into the Accounting view and can be matched against specific cheque payments.</p>
+        <div class="ag">
+          <div class="fld"><label>Date Received (dd/mm/yyyy) *</label><input type="text" id="inc_date" placeholder="26/06/2026" maxlength="10"></div>
+          <div class="fld"><label>Account Received Into *</label>
+            <select id="inc_acc">
+              <option value="MAIN 102">MAIN 102</option>
+              <option value="QAB 107">QAB 107</option>
+            </select>
+          </div>
+          <div class="fld"><label>Amount (KES) *</label><input type="text" id="inc_amt" placeholder="0.00"></div>
+          <div class="fld"><label>Category *</label>
+            <select id="inc_cat">
+              <option value="Cemetery Fees — Kariokor">Cemetery Fees — Kariokor</option>
+              <option value="Cemetery Fees — Langata">Cemetery Fees — Langata</option>
+              <option value="Donations Received">Donations Received</option>
+              <option value="Rent Income">Rent Income</option>
+              <option value="Miscellaneous Income">Miscellaneous Income</option>
+            </select>
+          </div>
+          <div class="fld"><label>Receipt / Reference No.</label><input type="text" id="inc_ref" placeholder="e.g. RCP-001"></div>
+          <div class="fld s2"><label>Description *</label><input type="text" id="inc_desc" placeholder="e.g. Cemetery fee — burial of Ahmed Mohamed"></div>
+        </div>
+        <div class="add-acts">
+          <button class="btn" style="background:var(--blue);color:#fff" onclick="saveIncome()">Save Income Entry</button>
+          <button class="btn btn-cancel" onclick="toggleIncome()">Cancel</button>
+          <span id="incMsg" style="font-size:12px;font-weight:500"></span>
+        </div>
+      </div>
+
       <!-- KPI STRIP -->
       <div class="kpi-strip" id="kpiStrip"></div>
 
@@ -486,6 +522,7 @@ tr.r-past td{background:var(--bg)}
           <button class="tbn" id="view-all" onclick="setView('all')">All Entries</button>
           <button class="tbn" id="view-recon" onclick="setView('recon')">Reconciliation</button>
           <button class="tbn" id="view-planned" onclick="setView('planned')">Planned</button>
+          <button class="tbn" id="view-accounting" onclick="setView('accounting')">Accounting</button>
         </div>
         <input class="srch" id="srch" type="text" placeholder="🔍  Search payee / cheque / narration…" oninput="render()">
         <div class="sp"></div>
@@ -505,6 +542,7 @@ tr.r-past td{background:var(--bg)}
 let CFG = JSON.parse(localStorage.getItem('isma_cfg') || 'null');
 let ROWS = [];
 let PLANNED = [];
+let INCOME = [];
 let acc = 'ALL', view = 'timeline';
 const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 
@@ -568,15 +606,32 @@ function initDashboard() {
 }
 
 // ─── LOAD DATA FROM GOOGLE SHEET ─────────────────────────────────────────
+async function fetchWithTimeout(url, options, timeoutMs) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs || 25000);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return res;
+  } catch(e) {
+    clearTimeout(id);
+    throw e;
+  }
+}
+
 async function loadData() {
   setSyncState('syncing', 'Syncing…');
   try {
-    const res  = await fetch(CFG.url + '?action=read&_=' + Date.now());
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
-    // Accept ALL rows — no date cutoff filter
-    ROWS = data.rows.filter(r => r.cheque || r.amount);
+    const url = CFG.url + '?action=read&_=' + Date.now();
+    const res  = await fetchWithTimeout(url, {}, 25000);
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch(e) { throw new Error('Invalid response from server. Try Refresh.'); }
+    if (!data.ok) throw new Error(data.error || 'Server error');
+    ROWS    = (data.rows    || []).filter(r => r.cheque || r.amount);
     PLANNED = (data.planned || []).filter(r => r.description || r.amount);
+    INCOME  = (data.income  || []).filter(r => r.description || r.amount);
     document.getElementById('lastSync').textContent =
       new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
     document.getElementById('ribbonCount').textContent =
@@ -584,9 +639,16 @@ async function loadData() {
     setSyncState('ok', 'Live · Google Sheets');
     render();
   } catch(e) {
-    setSyncState('error', 'Sync failed');
-    document.getElementById('mainOut').innerHTML =
-      `<div class="empty">⚠ Could not load data: ${e.message}.<br>Check your internet connection or click Refresh.</div>`;
+    const msg = e.name === 'AbortError' ? 'Connection timed out — click Refresh' : e.message;
+    setSyncState('error', 'Sync failed — click Refresh');
+    const out = document.getElementById('mainOut');
+    if (out) out.innerHTML = `<div class="empty">
+      ⚠ <strong>Could not load data:</strong> ${msg}<br><br>
+      <strong>Most common fixes:</strong><br>
+      1. Click <strong>↻ Refresh</strong> above<br>
+      2. In Apps Script: <strong>Deploy → Manage Deployments → New version → Deploy</strong><br>
+      3. Make sure <em>Who has access</em> is set to <strong>Anyone</strong>
+    </div>`;
   }
 }
 
@@ -1562,7 +1624,7 @@ function buildKPIs() {
 // ─── OVERRIDE setView ─────────────────────────────────────────────────
 function setView(v) {
   view = v;
-  ['timeline','all','recon','planned'].forEach(x => {
+  ['timeline','all','recon','planned','accounting'].forEach(x => {
     const tb = document.getElementById('view-' + x);
     const nb = document.getElementById('nav-' + x);
     if (tb) tb.classList.toggle('active', x === v);
@@ -1605,6 +1667,11 @@ function render() {
 
   if (view === 'recon') {
     out.innerHTML = renderRecon();
+    return;
+  }
+
+  if (view === 'accounting') {
+    out.innerHTML = renderAccounting();
     return;
   }
 
@@ -1657,6 +1724,8 @@ function toggleAdd() {
   p.classList.toggle('open');
   if (p.classList.contains('open')) {
     document.getElementById('plannedPanel').classList.remove('open');
+    const ip = document.getElementById('incomePanel');
+    if (ip) ip.classList.remove('open');
     const now = new Date();
     document.getElementById('in_date').value = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + now.getFullYear();
   }
@@ -1666,9 +1735,231 @@ function togglePlanned() {
   p.classList.toggle('open');
   if (p.classList.contains('open')) {
     document.getElementById('addPanel').classList.remove('open');
+    document.getElementById('incomePanel').classList.remove('open');
     const now = new Date(TODAY); now.setDate(now.getDate() + 7);
     document.getElementById('pl_date').value = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + now.getFullYear();
   }
+}
+
+function toggleIncome() {
+  const p = document.getElementById('incomePanel');
+  p.classList.toggle('open');
+  if (p.classList.contains('open')) {
+    document.getElementById('addPanel').classList.remove('open');
+    document.getElementById('plannedPanel').classList.remove('open');
+    const now = new Date();
+    document.getElementById('inc_date').value = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + now.getFullYear();
+  }
+}
+
+// ─── SAVE INCOME ──────────────────────────────────────────────────────────
+async function saveIncome() {
+  const dateRaw = document.getElementById('inc_date').value.trim();
+  const account = document.getElementById('inc_acc').value;
+  const amtStr  = document.getElementById('inc_amt').value.replace(/,/g,'').trim();
+  const cat     = document.getElementById('inc_cat').value;
+  const ref     = document.getElementById('inc_ref').value.trim();
+  const desc    = document.getElementById('inc_desc').value.trim();
+  const msg     = document.getElementById('incMsg');
+
+  const isoDate = parseDMY(dateRaw);
+  if (!isoDate || !desc || !amtStr) {
+    msg.style.color='var(--red)'; msg.textContent='⚠ Fill required fields. Date: dd/mm/yyyy'; return;
+  }
+  const amount = parseFloat(amtStr);
+  if (isNaN(amount)||amount<=0) { msg.style.color='var(--red)'; msg.textContent='⚠ Invalid amount'; return; }
+
+  msg.style.color='var(--muted)'; msg.textContent='Saving…';
+  try {
+    const body = { action:'writeIncome', date:isoDate, reference:ref, description:desc, category:cat, account, amount, addedBy: CFG.name + (CFG.role?' · '+CFG.role:'') };
+    const res = await fetch(CFG.url, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(body) });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error||data.message);
+    msg.style.color='var(--green-bright)'; msg.textContent='✓ ' + data.message;
+    ['inc_amt','inc_ref','inc_desc'].forEach(id=>document.getElementById(id).value='');
+    setTimeout(()=>{msg.textContent=''; loadData();}, 1500);
+  } catch(e) { msg.style.color='var(--red)'; msg.textContent='✗ ' + e.message; }
+}
+
+async function deleteIncomeEntry(row) {
+  if (!confirm('Delete this income entry?')) return;
+  try {
+    const res = await fetch(CFG.url, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action:'deleteIncome',row}) });
+    const data = await res.json();
+    if (data.ok) loadData();
+    else alert('Delete failed: '+data.message);
+  } catch(e) { alert('Error: '+e.message); }
+}
+
+// ─── MATCH / UNMATCH DEBT ─────────────────────────────────────────────────
+async function matchDebt(incomeRow, incomeRef, cheque, account) {
+  try {
+    const res = await fetch(CFG.url, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action:'matchDebt',incomeRow,incomeRef,cheque,account,matchedBy:CFG.name}) });
+    const data = await res.json();
+    if (data.ok) { loadData(); }
+    else alert('Match failed: '+data.message);
+  } catch(e) { alert('Error: '+e.message); }
+}
+
+async function unmatchDebt(incomeRow, cheque, account) {
+  if (!confirm('Remove this match?')) return;
+  try {
+    const res = await fetch(CFG.url, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action:'unmatchDebt',incomeRow,cheque,account}) });
+    const data = await res.json();
+    if (data.ok) loadData();
+    else alert('Unmatch failed: '+data.message);
+  } catch(e) { alert('Error: '+e.message); }
+}
+
+// ─── ACCOUNTING VIEW ──────────────────────────────────────────────────────
+function renderAccounting() {
+  const expenses = filtered().filter(r => { const d=parseISO(r.date); return d&&d<=TODAY; });
+  const incomeF  = INCOME.filter(r => acc==='ALL'||r.account===acc);
+  const totalInc = incomeF.reduce((s,r)=>s+r.amount,0);
+  const totalExp = expenses.reduce((s,r)=>s+r.amount,0);
+  const netPos   = totalInc - totalExp;
+  const matched  = expenses.filter(r=>r.offsetRef);
+  const unmatched= expenses.filter(r=>!r.offsetRef);
+
+  // Income by category
+  const incCats = {};
+  incomeF.forEach(r=>{ incCats[r.category]=(incCats[r.category]||0)+r.amount; });
+
+  const posCol = netPos>=0 ? 'var(--green-bright)' : 'var(--red)';
+
+  let h = `
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+    <div style="background:var(--white);border-radius:var(--radius);padding:16px 18px;border:1px solid var(--border);box-shadow:var(--shadow);position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),#6ba6f0)"></div>
+      <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted2);margin-bottom:6px">Total Income Received</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;color:var(--blue)">${fmt(totalInc)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">${incomeF.length} receipt(s)</div>
+    </div>
+    <div style="background:var(--white);border-radius:var(--radius);padding:16px 18px;border:1px solid var(--border);box-shadow:var(--shadow);position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--red),#f09090)"></div>
+      <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted2);margin-bottom:6px">Total Expenditure</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;color:var(--red)">${fmt(totalExp)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">${expenses.length} cheque(s) issued</div>
+    </div>
+    <div style="background:var(--white);border-radius:var(--radius);padding:16px 18px;border:1px solid var(--border);box-shadow:var(--shadow);position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,${posCol},${netPos>=0?'var(--green-light)':'var(--red-l)'})"></div>
+      <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted2);margin-bottom:6px">Net Position</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;color:${posCol}">${netPos>=0?'+':''}${fmt(netPos)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">${netPos>=0?'Surplus':'Deficit'}</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+    <div style="background:var(--white);border-radius:var(--radius);padding:16px 18px;border:1px solid var(--border);box-shadow:var(--shadow)">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--blue);margin-bottom:12px">Income Breakdown by Category</div>
+      ${Object.keys(incCats).length ? Object.entries(incCats).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bg)">
+          <span style="font-size:12px;font-weight:500">${cat}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;color:var(--blue)">${fmt(amt)}</span>
+        </div>`).join('') : '<div style="color:var(--muted);font-style:italic;font-size:12px">No income recorded yet. Click "+ Record Income" to start.</div>'}
+    </div>
+    <div style="background:var(--white);border-radius:var(--radius);padding:16px 18px;border:1px solid var(--border);box-shadow:var(--shadow)">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--amber);margin-bottom:12px">Debt Matching — Unmatched Cheques (${unmatched.length})</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">Click a cheque below to match it against an income receipt. Once matched, it shows as ✓ Offset.</div>
+      ${unmatched.length===0 ? '<div style="color:var(--green-bright);font-weight:600;font-size:12px;background:var(--green-light);padding:8px 10px;border-radius:6px">✓ All cheques are matched to income</div>' :
+        unmatched.slice(0,8).map(r=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg)">
+          <span class="pill ${r.account==='MAIN 102'?'p-main':'p-qab'}" style="font-size:9px">${r.account==='MAIN 102'?'M':'Q'}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted)">Chq ${r.cheque}</span>
+          <span style="flex:1;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cap(r.payee)}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11.5px;color:var(--text)">${Math.round(r.amount).toLocaleString('en-KE')}</span>
+          <button onclick="showMatchModal('${r.cheque.replace(/'/g,"\\'")}','${r.account}')" style="padding:3px 8px;font-size:10px;font-weight:600;border:1px solid var(--blue);border-radius:5px;background:#fff;color:var(--blue);cursor:pointer">Match</button>
+        </div>`).join('')
+      }
+      ${unmatched.length>8?`<div style="font-size:10.5px;color:var(--muted);margin-top:6px">+${unmatched.length-8} more unmatched cheques</div>`:''}
+    </div>
+  </div>`;
+
+  // Income ledger table
+  h += secH('💰','Income Ledger',incomeF.length,totalInc,'var(--blue)');
+  if (!incomeF.length) {
+    h += `<div class="empty">No income recorded yet. Click <strong>＋ Record Income</strong> in the sidebar to start.</div>`;
+  } else {
+    h += `<div class="tw"><table>
+      <thead><tr>
+        <th>Date</th><th>Reference</th><th>Description</th><th>Category</th>
+        <th>Account</th><th class="r">Amount (KES)</th><th>Matched Cheque</th><th></th>
+      </tr></thead><tbody>
+      ${incomeF.map(r=>`<tr>
+        <td class="mono">${fmtDMY(r.date)}</td>
+        <td class="mono" style="color:var(--muted)">${r.reference||'—'}</td>
+        <td style="font-weight:500">${r.description}</td>
+        <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:9.5px;font-weight:700;background:var(--blue-l);color:var(--blue)">${r.category}</span></td>
+        <td><span class="pill ${r.account==='MAIN 102'?'p-main':'p-qab'}">${r.account}</span></td>
+        <td class="amt" style="color:var(--blue)">${Math.round(r.amount).toLocaleString('en-KE')}</td>
+        <td>${r.matchedCheque
+          ? `<span style="background:var(--green-light);color:var(--green-bright);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">✓ ${r.matchedCheque}</span>
+             <button onclick="unmatchDebt(${r._row},'${r.matchedCheque.replace('Chq ','').replace(/'/g,"\\'")}','${r.account}')" style="font-size:9px;padding:2px 6px;border:1px solid var(--muted2);border-radius:4px;background:#fff;color:var(--muted);cursor:pointer;margin-left:4px">↺</button>`
+          : `<span style="color:var(--muted);font-size:11px">Unmatched</span>`}
+        </td>
+        <td><button class="del-btn" onclick="deleteIncomeEntry(${r._row})">🗑</button></td>
+      </tr>`).join('')}
+      <tr class="tr-tot">
+        <td colspan="5"><strong>TOTAL INCOME — ${incomeF.length} receipt(s)</strong></td>
+        <td class="amt" style="color:var(--blue)">${Math.round(totalInc).toLocaleString('en-KE')}</td>
+        <td colspan="2"></td>
+      </tr>
+      </tbody></table></div>`;
+  }
+
+  // Matched cheques summary
+  if (matched.length) {
+    h += secH('✓','Matched Cheques — Offset Against Income',matched.length,matched.reduce((s,r)=>s+r.amount,0),'var(--green-bright)');
+    h += `<div class="tw"><table>
+      <thead><tr><th>Date</th><th>Cheque No.</th><th>Account</th><th>Payee</th><th class="r">Amount (KES)</th><th>Offset Against</th></tr></thead>
+      <tbody>${matched.map(r=>`<tr style="background:var(--green-light)">
+        <td class="mono">${fmtDMY(r.date)}</td>
+        <td class="mono">${r.cheque}</td>
+        <td><span class="pill ${r.account==='MAIN 102'?'p-main':'p-qab'}">${r.account}</span></td>
+        <td style="font-weight:500">${cap(r.payee)}</td>
+        <td class="amt">${Math.round(r.amount).toLocaleString('en-KE')}</td>
+        <td><span style="background:var(--green-light);color:var(--green);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">✓ ${r.offsetRef}</span></td>
+      </tr>`).join('')}
+      </tbody></table></div>`;
+  }
+
+  return h;
+}
+
+// ─── MATCH MODAL ─────────────────────────────────────────────────────────
+function showMatchModal(cheque, account) {
+  const unMatchedIncome = INCOME.filter(r=>(acc==='ALL'||r.account===account||r.account==='')&&!r.matchedCheque);
+  let modal = document.getElementById('matchModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'matchModal';
+    document.body.appendChild(modal);
+  }
+  if (!unMatchedIncome.length) {
+    alert('No unmatched income entries available. Please record income first using "+ Record Income".');
+    return;
+  }
+  modal.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,40,10,0.5);z-index:900" onclick="document.getElementById('matchModal').style.display='none'"></div>
+    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;padding:24px;width:min(500px,90vw);z-index:901;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">Match Cheque ${cheque} to Income</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Select an income receipt to offset this cheque against:</div>
+      <div style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+        ${unMatchedIncome.map(r=>`
+          <div onclick="matchDebt(${r._row},'${r.reference||r.description.substring(0,20).replace(/'/g,"\\'")}','${cheque}','${account}');document.getElementById('matchModal').style.display='none'"
+            style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;transition:all .15s"
+            onmouseover="this.style.borderColor='var(--blue)';this.style.background='var(--blue-l)'"
+            onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:13px">${r.description}</div>
+              <div style="font-size:10.5px;color:var(--muted)">${fmtDMY(r.date)} · ${r.category}</div>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:var(--blue)">${fmt(r.amount)}</div>
+          </div>`).join('')}
+      </div>
+      <button onclick="document.getElementById('matchModal').style.display='none'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--muted);font-weight:600;cursor:pointer">Cancel</button>
+    </div>`;
+  modal.style.display = 'block';
 }
 
 </script>
